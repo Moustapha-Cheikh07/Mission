@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{TITLE}} - Merlin Gerin</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/bootstrap-custom.css">
+</head>
+
+<body class="bg-light">
+    <a href="#main-content" class="skip-to-main visually-hidden-focusable">Aller au contenu principal</a>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" role="navigation" aria-label="Navigation principale">
+        <div class="sidebar-header text-center py-4">
+            <img src="assets/images/logo.jpg" alt="Schneider Electric Logo" class="company-logo mb-2">
+            <h2 class="h5 mb-1 text-white fw-bold">Merlin Gerin</h2>
+            <p class="small text-white-50 mb-0">Dashboard Qualité</p>
+        </div>
+        <nav class="sidebar-nav px-3" aria-label="Menu principal">
+            <a href="dashboard.html" class="nav-item {{ACTIVE_DASHBOARD}}">
+                <i class="bi bi-speedometer2"></i>
+                <span>Tableau de bord</span>
+            </a>
+            <a href="documents.html" class="nav-item {{ACTIVE_DOCUMENTS}}">
+                <i class="bi bi-folder2-open"></i>
+                <span>Dossiers Qualité</span>
+            </a>
+            <a href="forms.html" class="nav-item {{ACTIVE_FORMS}}">
+                <i class="bi bi-file-earmark-text"></i>
+                <span>Formulaires</span>
+            </a>
+            <a href="training.html" class="nav-item {{ACTIVE_TRAINING}}">
+                <i class="bi bi-mortarboard"></i>
+                <span>Formation</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer p-3 mt-auto">
+            <a href="#" class="btn btn-outline-light w-100 d-flex align-items-center justify-content-center gap-2" id="auth-btn">
+                <i class="bi bi-box-arrow-in-right"></i>
+                <span>S'identifier</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content" role="main">

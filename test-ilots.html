@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Pages Îlots</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 50px 20px;
+        }
+
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .test-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+
+        .ilot-btn {
+            display: inline-block;
+            padding: 20px 40px;
+            margin: 10px;
+            border-radius: 15px;
+            color: white;
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .ilot-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+
+        .pm1 {
+            background: linear-gradient(135deg, #3C8CE7 0%, #00EAFF 100%);
+        }
+
+        .pm2 {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .bz1 {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .bz2 {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .grm {
+            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+        }
+
+        .api-test {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-family: monospace;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-ok {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-container">
+        <!-- Header -->
+        <div class="test-card">
+            <h1 class="text-center mb-4">
+                <i class="bi bi-gear-wide-connected"></i>
+                Test Pages Îlots - Dashboard Qualité
+            </h1>
+            <p class="text-center text-muted mb-0">
+                Cliquez sur un îlot pour ouvrir sa page dédiée
+            </p>
+        </div>
+
+        <!-- Îlots Links -->
+        <div class="test-card">
+            <h3 class="mb-4"><i class="bi bi-window-desktop"></i> Pages Îlots</h3>
+            <div class="text-center">
+                <a href="/ilots/pm1.html" target="_blank" class="ilot-btn pm1">
+                    <i class="bi bi-gear"></i> ÎLOT PM1
+                </a>
+                <a href="/ilots/pm2.html" target="_blank" class="ilot-btn pm2">
+                    <i class="bi bi-gear"></i> ÎLOT PM2
+                </a>
+                <a href="/ilots/bz1.html" target="_blank" class="ilot-btn bz1">
+                    <i class="bi bi-gear"></i> ÎLOT BZ1
+                </a>
+                <a href="/ilots/bz2.html" target="_blank" class="ilot-btn bz2">
+                    <i class="bi bi-gear"></i> ÎLOT BZ2
+                </a>
+                <a href="/ilots/grm.html" target="_blank" class="ilot-btn grm">
+                    <i class="bi bi-gear"></i> ÎLOT GRM
+                </a>
+            </div>
+        </div>
+
+        <!-- API Tests -->
+        <div class="test-card">
+            <h3 class="mb-4"><i class="bi bi-plug"></i> Tests API</h3>
+
+            <button class="btn btn-primary btn-lg mb-3" onclick="testAllAPIs()">
+                <i class="bi bi-play-fill"></i> Tester Toutes les APIs
+            </button>
+
+            <div id="api-results" class="api-test">
+                <div class="loading">
+                    <i class="bi bi-clock"></i> Cliquez sur "Tester Toutes les APIs" pour commencer
+                </div>
+            </div>
+        </div>
+
+        <!-- Cache Info -->
+        <div class="test-card">
+            <h3 class="mb-4"><i class="bi bi-hdd-stack"></i> Informations Cache</h3>
+
+            <button class="btn btn-info btn-lg mb-3" onclick="getCacheInfo()">
+                <i class="bi bi-info-circle"></i> Obtenir Infos Cache
+            </button>
+
+            <div id="cache-info" class="api-test">
+                <div class="loading">
+                    <i class="bi bi-clock"></i> Cliquez pour voir les informations cache
+                </div>
+            </div>
+        </div>
+
+        <!-- Refresh Cache -->
+        <div class="test-card">
+            <h3 class="mb-4"><i class="bi bi-arrow-repeat"></i> Rafraîchissement Cache</h3>
+
+            <button class="btn btn-warning btn-lg mb-3" onclick="refreshCache()">
+                <i class="bi bi-arrow-repeat"></i> Forcer Rafraîchissement
+            </button>
+
+            <div id="refresh-result" class="api-test">
+                <div class="loading">
+                    <i class="bi bi-clock"></i> Cliquez pour forcer le rafraîchissement des caches
+                </div>
+            </div>
+        </div>
+
+        <!-- Back to Dashboard -->
+        <div class="test-card text-center">
+            <a href="/dashboard.html" class="btn btn-success btn-lg">
+                <i class="bi bi-house"></i> Retour au Dashboard Principal
+            </a>
+        </div>
+    </div>
+
+    <script>
+        async function testAllAPIs() {
+            const resultsDiv = document.getElementById('api-results');
+            resultsDiv.innerHTML = '<div class="loading"><i class="bi bi-hourglass-split"></i> Test en cours...</div>';
+
+            const ilots = ['PM1', 'PM2', 'BZ1', 'BZ2', 'GRM'];
+            let results = '<h5>Résultats des Tests:</h5><hr>';
+
+            for (const ilot of ilots) {
+                try {
+                    const response = await fetch(`/api/ilot/${ilot}`);
+                    const data = await response.json();
+
+                    const status = data.success ? 'OK' : 'ERROR';
+                    const statusClass = data.success ? 'status-ok' : 'status-error';
+                    const icon = data.success ? '✅' : '❌';
+
+                    results += `
+                        <div class="mb-3">
+                            <strong>${icon} ${ilot}</strong>
+                            <span class="status-badge ${statusClass}">${status}</span>
+                            <br>
+                            <small>Enregistrements: ${data.count || 0}</small>
+                            ${data.lastUpdate ? '<br><small>Mise à jour: ' + data.lastUpdate + '</small>' : ''}
+                        </div>
+                    `;
+                } catch (error) {
+                    results += `
+                        <div class="mb-3">
+                            <strong>❌ ${ilot}</strong>
+                            <span class="status-badge status-error">ERROR</span>
+                            <br>
+                            <small>Erreur: ${error.message}</small>
+                        </div>
+                    `;
+                }
+            }
+
+            resultsDiv.innerHTML = results;
+        }
+
+        async function getCacheInfo() {
+            const infoDiv = document.getElementById('cache-info');
+            infoDiv.innerHTML = '<div class="loading"><i class="bi bi-hourglass-split"></i> Chargement...</div>';
+
+            try {
+                const response = await fetch('/api/ilots/info');
+                const data = await response.json();
+
+                let html = '<h5>Informations Cache:</h5><hr>';
+
+                for (const [ilot, info] of Object.entries(data)) {
+                    if (info.exists) {
+                        html += `
+                            <div class="mb-3">
+                                <strong>✅ ${ilot}</strong>
+                                <br>
+                                <small>Taille: ${info.size}</small><br>
+                                <small>Enregistrements: ${info.recordCount}</small><br>
+                                <small>Créé: ${new Date(info.cacheCreatedAt).toLocaleString('fr-FR')}</small>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="mb-3">
+                                <strong>❌ ${ilot}</strong>
+                                <br>
+                                <small>${info.message}</small>
+                            </div>
+                        `;
+                    }
+                }
+
+                infoDiv.innerHTML = html;
+            } catch (error) {
+                infoDiv.innerHTML = `<div class="text-danger">❌ Erreur: ${error.message}</div>`;
+            }
+        }
+
+        async function refreshCache() {
+            const resultDiv = document.getElementById('refresh-result');
+            resultDiv.innerHTML = '<div class="loading"><i class="bi bi-hourglass-split"></i> Rafraîchissement en cours... (peut prendre 1-2 minutes)</div>';
+
+            try {
+                const response = await fetch('/api/ilots/refresh', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    let html = `
+                        <div class="text-success">
+                            <h5>✅ Rafraîchissement Réussi</h5>
+                            <hr>
+                            <strong>Durée:</strong> ${data.duration}s<br>
+                            <strong>Message:</strong> ${data.message}<br>
+                            <hr>
+                            <h6>Résultats par Îlot:</h6>
+                    `;
+
+                    for (const [ilot, result] of Object.entries(data.results)) {
+                        html += `
+                            <div class="mb-2">
+                                <strong>${ilot}:</strong>
+                                ${result.success ? '✅' : '❌'}
+                                ${result.recordCount} enregistrements
+                            </div>
+                        `;
+                    }
+
+                    html += '</div>';
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<div class="text-danger">❌ Erreur: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="text-danger">❌ Erreur: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+
+</html>
