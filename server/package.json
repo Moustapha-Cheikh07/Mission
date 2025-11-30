@@ -1,0 +1,18 @@
+{
+    "name": "merlin-gerin-local-server",
+    "version": "1.0.0",
+    "description": "Serveur local pour lire les données Excel SAP",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "cors": "^2.8.5",
+        "express": "^4.18.2",
+        "multer": "^1.4.5-lts.1",
+        "mysql2": "^3.15.3",
+        "node-cron": "^4.2.1",
+        "sqlite3": "^5.1.7",
+        "xlsx": "^0.18.5"
+    }
+}
