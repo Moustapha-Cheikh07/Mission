@@ -34,3 +34,17 @@ build/
 # Config files with sensitive data
 src/config/.env
 src/config/google-sheets-config.js
+
+# Uploaded files (keep structure but ignore uploaded content)
+assets/documents/*
+assets/training/*
+assets/images/*
+!assets/documents/.gitkeep
+!assets/training/.gitkeep
+!assets/images/.gitkeep
+!assets/README.md
+
+# Database files
+backend/database/*.db
+backend/cache/*.json
+!backend/cache/.gitkeep

@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
 const dbConfig = require('./config/db.config');
+const { convertMySQLDateToString, convertFicheDates } = require('./date-utils');
 
 // Create connection pool with lazy initialization
 let pool = null;
@@ -13,7 +14,12 @@ async function initDatabase() {
         try {
             console.log(`📊 Attempting MySQL connection to ${host}...`);
 
-            const testConfig = { ...dbConfig, host, connectTimeout: 5000 };
+            const testConfig = {
+                ...dbConfig,
+                host,
+                connectTimeout: 5000,
+                dateStrings: true // Forcer les dates comme des chaînes
+            };
             const testPool = mysql.createPool(testConfig);
             const connection = await testPool.getConnection();
 
@@ -232,13 +238,17 @@ module.exports = {
     },
 
     getFichesEtoile: async () => {
-        const [rows] = await pool.query('SELECT * FROM fiche_etoile ORDER BY created_at DESC');
-        return rows;
+        const [rows] = await pool.query(`SELECT * FROM fiche_etoile ORDER BY created_at DESC`);
+        return convertFicheDates(rows);
     },
 
     getFicheEtoileById: async (id) => {
-        const [rows] = await pool.query('SELECT * FROM fiche_etoile WHERE id = ?', [id]);
-        return rows[0];
+        const [rows] = await pool.query(`SELECT * FROM fiche_etoile WHERE id = ?`, [id]);
+        const row = rows[0];
+        if (row && row.date_production) {
+            row.date_production = convertMySQLDateToString(row.date_production);
+        }
+        return row;
     },
 
     updateFicheEtoile: async (id, fiche) => {
@@ -303,11 +313,8 @@ module.exports = {
     },
 
     getFichesEtoileByStatus: async (status) => {
-        const [rows] = await pool.query(
-            'SELECT * FROM fiche_etoile WHERE status = ? ORDER BY created_at DESC',
-            [status]
-        );
-        return rows;
+        const [rows] = await pool.query(`SELECT * FROM fiche_etoile WHERE status = ? ORDER BY created_at DESC`, [status]);
+        return convertFicheDates(rows);
     },
 
     searchFichesEtoile: async (searchTerm) => {
@@ -318,13 +325,17 @@ module.exports = {
              ORDER BY created_at DESC`,
             [searchTerm, `%${searchTerm}%`]
         );
-        return rows;
+        return convertFicheDates(rows);
     },
 
     // Récupérer une fiche par numéro NNCP
     getFicheEtoileByNumero: async (numero_nncp) => {
-        const [rows] = await pool.query('SELECT * FROM fiche_etoile WHERE numero_nncp = ?', [numero_nncp]);
-        return rows[0];
+        const [rows] = await pool.query(`SELECT * FROM fiche_etoile WHERE numero_nncp = ?`, [numero_nncp]);
+        const row = rows[0];
+        if (row && row.date_production) {
+            row.date_production = convertMySQLDateToString(row.date_production);
+        }
+        return row;
     },
 
     close: async () => {

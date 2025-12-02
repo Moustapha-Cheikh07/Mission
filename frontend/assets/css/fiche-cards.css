@@ -1,0 +1,322 @@
+/* ========================================
+   FICHE CARDS - Design Moderne et Interactif
+   ======================================== */
+
+/* Container de la liste des fiches */
+#fiches-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+/* Carte de fiche moderne */
+.fiche-card-modern {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.fiche-card-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.fiche-card-modern:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.fiche-card-modern:hover::before {
+    transform: scaleX(1);
+}
+
+/* Header de la carte */
+.fiche-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+
+.fiche-numero-ref {
+    flex: 1;
+    min-width: 0;
+}
+
+.fiche-numero {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.35rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.fiche-reference {
+    margin: 0.5rem 0 0 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a202c;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Badge de statut avec dégradé */
+.fiche-status-badge {
+    padding: 0.4rem 0.9rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Libellé de la fiche */
+.fiche-libelle {
+    color: #4a5568;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Grille d'informations */
+.fiche-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.fiche-info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #f7fafc;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.fiche-info-item:hover {
+    background: #edf2f7;
+    transform: scale(1.02);
+}
+
+.info-icon {
+    font-size: 1.4rem;
+    color: #667eea;
+    flex-shrink: 0;
+}
+
+.fiche-info-item > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.info-label {
+    font-size: 0.7rem;
+    color: #718096;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-size: 0.95rem;
+    color: #2d3748;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Section problème */
+.fiche-probleme {
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    border-left: 4px solid #fc8181;
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.fiche-probleme i {
+    color: #e53e3e;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.fiche-probleme span {
+    color: #742a2a;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+/* Footer de la carte */
+.fiche-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 1rem;
+}
+
+.fiche-49ms {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.fiche-49ms i {
+    font-size: 1.2rem;
+}
+
+.fiche-context-hint {
+    font-size: 0.75rem;
+    color: #a0aec0;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.fiche-card-modern:hover .fiche-context-hint {
+    opacity: 1;
+}
+
+/* Animation de pulsation pour les nouvelles fiches */
+@keyframes pulse-border {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(102, 126, 234, 0);
+    }
+}
+
+.fiche-card-modern.new-fiche {
+    animation: pulse-border 2s ease-in-out 3;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    #fiches-list {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .fiche-card-modern {
+        padding: 1.25rem;
+    }
+
+    .fiche-info-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .fiche-card-header {
+        flex-direction: column;
+    }
+
+    .fiche-status-badge {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .fiche-card-modern {
+        border-radius: 12px;
+        padding: 1rem;
+    }
+
+    .fiche-reference {
+        font-size: 1rem;
+    }
+
+    .fiche-libelle {
+        font-size: 0.85rem;
+    }
+}
+
+/* État de chargement */
+.fiches-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem;
+    color: #718096;
+}
+
+.fiches-loading i {
+    font-size: 2rem;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* État vide amélioré */
+.fiches-empty {
+    text-align: center;
+    padding: 3rem;
+}
+
+.fiches-empty i {
+    font-size: 4rem;
+    color: #cbd5e0;
+    margin-bottom: 1rem;
+}
+
+.fiches-empty p {
+    color: #a0aec0;
+    font-size: 1rem;
+}

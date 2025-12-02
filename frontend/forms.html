@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="assets/css/components.css">
     <link rel="stylesheet" href="assets/css/bootstrap-custom.css">
     <link rel="stylesheet" href="assets/css/enhancements.css">
+    <link rel="stylesheet" href="assets/css/fiche-cards.css">
 </head>
 
 <body class="bg-light">
@@ -141,9 +142,103 @@
 
                                         <div class="mb-0">
                                             <label class="form-label fw-medium">
-                                                <i class="bi bi-exclamation-circle me-1"></i>Problème
+                                                <i class="bi bi-exclamation-circle me-1"></i>Problème <span class="text-danger">*</span>
                                             </label>
-                                            <textarea id="fiche-probleme" class="form-control" rows="3" placeholder="Non spécifié"></textarea>
+                                            <select id="fiche-probleme" class="form-select" required>
+                                                <option value="">Sélectionner un type de problème...</option>
+                                                <option value="Absence pastille">Absence pastille</option>
+                                                <option value="Absence ressort">Absence ressort</option>
+                                                <option value="Autre">Autre</option>
+                                                <option value="Bavure de découpe">Bavure de découpe</option>
+                                                <option value="Bavure de découpe (Poinçon usé ou cassé)">Bavure de découpe (Poinçon usé ou cassé)</option>
+                                                <option value="Bavure de découpe sur la plage (Poinçon usé ou cassé)">Bavure de découpe sur la plage (Poinçon usé ou cassé)</option>
+                                                <option value="Bavure de découpe sur le bilame (Poinçon usé ou cassé)">Bavure de découpe sur le bilame (Poinçon usé ou cassé)</option>
+                                                <option value="Bavure de découpe sur le support (Poinçon usé ou cassé)">Bavure de découpe sur le support (Poinçon usé ou cassé)</option>
+                                                <option value="Casse porte contact">Casse porte contact</option>
+                                                <option value="Changement de série">Changement de série</option>
+                                                <option value="Chargement contact mobile">Chargement contact mobile</option>
+                                                <option value="chargement porte contact">chargement porte contact</option>
+                                                <option value="Chargement sous ensemble thermique">Chargement sous ensemble thermique</option>
+                                                <option value="Compactage tresse non conforme">Compactage tresse non conforme</option>
+                                                <option value="Conformation bilame NC">Conformation bilame NC</option>
+                                                <option value="Contact mobile cloqué">Contact mobile cloqué</option>
+                                                <option value="Contrôle contact mobile">Contrôle contact mobile</option>
+                                                <option value="Contrôle porte contact">Contrôle porte contact</option>
+                                                <option value="Contrôle présence position">Contrôle présence position</option>
+                                                <option value="Contrôle présence tresse">Contrôle présence tresse</option>
+                                                <option value="Contrôle vision soudure">Contrôle vision soudure</option>
+                                                <option value="COQ">COQ</option>
+                                                <option value="Côte hauteur bilame NC">Côte hauteur bilame NC</option>
+                                                <option value="Cycle de soudure 2">Cycle de soudure 2</option>
+                                                <option value="Cycle soudure 1">Cycle soudure 1</option>
+                                                <option value="Décalage bilame/bilame support">Décalage bilame/bilame support</option>
+                                                <option value="Décalage bilame/shunt">Décalage bilame/shunt</option>
+                                                <option value="Découpe plage NC">Découpe plage NC</option>
+                                                <option value="Découpe toboggan NC">Découpe toboggan NC</option>
+                                                <option value="Dimension et qualité des compactages NC">Dimension et qualité des compactages NC</option>
+                                                <option value="Erreur Bilame">Erreur Bilame</option>
+                                                <option value="Erreur Marquage">Erreur Marquage</option>
+                                                <option value="Erreur section Tresse">Erreur section Tresse</option>
+                                                <option value="Etat visuel du sous ensemble non conforme">Etat visuel du sous ensemble non conforme</option>
+                                                <option value="Fourreau endommagé">Fourreau endommagé</option>
+                                                <option value="Fourreau pas suffisamment plaqué contre la carcasse">Fourreau pas suffisamment plaqué contre la carcasse</option>
+                                                <option value="Géométrie contact">Géométrie contact</option>
+                                                <option value="Géométrie Contact Fixe Neutre (Angle / Côte)">Géométrie Contact Fixe Neutre (Angle / Côte)</option>
+                                                <option value="Géométrie Corne non conforme( Outil usé ou cassé)">Géométrie Corne non conforme( Outil usé ou cassé)</option>
+                                                <option value="Géométrie pattes (Angle / Côte)">Géométrie pattes (Angle / Côte)</option>
+                                                <option value="Géométrie pattes (angle 90°/côte 17,2)">Géométrie pattes (angle 90°/côte 17,2)</option>
+                                                <option value="Géométrie plage non conforme( Outil usé ou cassé)">Géométrie plage non conforme( Outil usé ou cassé)</option>
+                                                <option value="Géométrie support bilame NC">Géométrie support bilame NC</option>
+                                                <option value="Géométrie Support non conforme( Outil usé ou cassé)">Géométrie Support non conforme( Outil usé ou cassé)</option>
+                                                <option value="Géométrie(angle 90°/côte 35,85 ou 33,85)">Géométrie(angle 90°/côte 35,85 ou 33,85)</option>
+                                                <option value="Grattons sur la soudure Tresse/Contact mobile">Grattons sur la soudure Tresse/Contact mobile</option>
+                                                <option value="Hauteur bossage NC">Hauteur bossage NC</option>
+                                                <option value="Hauteur bossage/picots plage">Hauteur bossage/picots plage</option>
+                                                <option value="Hauteur picot NC">Hauteur picot NC</option>
+                                                <option value="Insertion contact mobile en X NC">Insertion contact mobile en X NC</option>
+                                                <option value="Insertion contact mobile en Y NC">Insertion contact mobile en Y NC</option>
+                                                <option value="Insertion contact mobile en Z NC">Insertion contact mobile en Z NC</option>
+                                                <option value="Insertion ressort NC">Insertion ressort NC</option>
+                                                <option value="Intégrité du noyau non conforme">Intégrité du noyau non conforme</option>
+                                                <option value="Longueur chauffée NC">Longueur chauffée NC</option>
+                                                <option value="Longueur de tresse contact NC">Longueur de tresse contact NC</option>
+                                                <option value="Mobilité du noyau non conforme">Mobilité du noyau non conforme</option>
+                                                <option value="Non tenue de la soudure Brin/Carcasse(Usure/Changement des électrodes...)">Non tenue de la soudure Brin/Carcasse(Usure/Changement des électrodes...)</option>
+                                                <option value="Non tenue de la soudure Brin/Plage(Usure/Changement des électrodes...)">Non tenue de la soudure Brin/Plage(Usure/Changement des électrodes...)</option>
+                                                <option value="Non tenue de la soudure Corne/plage">Non tenue de la soudure Corne/plage</option>
+                                                <option value="Non tenue de la soudure Shunt/Plage (Usure/Changement des électrodes...)">Non tenue de la soudure Shunt/Plage (Usure/Changement des électrodes...)</option>
+                                                <option value="Non tenue de la soudure Tresse/Bilame (Usure/Changement des électrodes...)">Non tenue de la soudure Tresse/Bilame (Usure/Changement des électrodes...)</option>
+                                                <option value="Non tenue de la triple soudure (Usure/Changement des électrodes...)">Non tenue de la triple soudure (Usure/Changement des électrodes...)</option>
+                                                <option value="Pastille dégradée">Pastille dégradée</option>
+                                                <option value="Pièces pour contrôle">Pièces pour contrôle</option>
+                                                <option value="Position bilame en Z NC">Position bilame en Z NC</option>
+                                                <option value="Position du brin sur la carcasse NC">Position du brin sur la carcasse NC</option>
+                                                <option value="Position du brin sur la plage NC">Position du brin sur la plage NC</option>
+                                                <option value="Position pastille">Position pastille</option>
+                                                <option value="Position pastille (Angle / Côte)">Position pastille (Angle / Côte)</option>
+                                                <option value="Position pastille (côte 4,6 / côte 7,6 / côte 4,2)">Position pastille (côte 4,6 / côte 7,6 / côte 4,2)</option>
+                                                <option value="Position pastille (côte 4,6/côte 7,6/côte 4,2/angle 42°)">Position pastille (côte 4,6/côte 7,6/côte 4,2/angle 42°)</option>
+                                                <option value="Position tresse/pied de bilame NC">Position tresse/pied de bilame NC</option>
+                                                <option value="Présence graton en pied de bilame">Présence graton en pied de bilame</option>
+                                                <option value="Présence grattons sur la sousure Tresse/Bilame">Présence grattons sur la sousure Tresse/Bilame</option>
+                                                <option value="Présence grattons sur la triple soudure">Présence grattons sur la triple soudure</option>
+                                                <option value="Sertissage Plaquette non conforme">Sertissage Plaquette non conforme</option>
+                                                <option value="Soudure pastille">Soudure pastille</option>
+                                                <option value="Soudure pastille (Usure/Changement des électrodes...)">Soudure pastille (Usure/Changement des électrodes...)</option>
+                                                <option value="Soudure tresse au pied du bilame NC">Soudure tresse au pied du bilame NC</option>
+                                                <option value="Soudure tresse sur contact mobile décalée">Soudure tresse sur contact mobile décalée</option>
+                                                <option value="Tenue d'insertion contact mobile dans porte contact NC (Usure/Changement des électrodes...)">Tenue d'insertion contact mobile dans porte contact NC (Usure/Changement des électrodes...)</option>
+                                                <option value="Tenue soudure bilame au support de bilame NC">Tenue soudure bilame au support de bilame NC</option>
+                                                <option value="Tenue soudure contact mobile dans porte contact NC">Tenue soudure contact mobile dans porte contact NC</option>
+                                                <option value="Tenue soudure shunt/bilame NC">Tenue soudure shunt/bilame NC</option>
+                                                <option value="Tenue soudure shunt/plage NC">Tenue soudure shunt/plage NC</option>
+                                                <option value="Tenue soudure tresse contact au bilame NC">Tenue soudure tresse contact au bilame NC</option>
+                                                <option value="Tenue soudure tresse sur contact mobile NC">Tenue soudure tresse sur contact mobile NC</option>
+                                                <option value="Tenue soudure tresse sur contact mobile NC (Usure/Changement des électrodes...)">Tenue soudure tresse sur contact mobile NC (Usure/Changement des électrodes...)</option>
+                                                <option value="Transfert A vers B">Transfert A vers B</option>
+                                                <option value="Tresse effilochée">Tresse effilochée</option>
+                                                <option value="Vis_Borne_ Borne mal vissé/ ou trop">Vis_Borne_ Borne mal vissé/ ou trop</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -159,19 +254,19 @@
                                         <div class="flex-grow-1 d-flex align-items-center justify-content-center">
                                             <div class="form-check form-switch" style="font-size: 1.5rem;">
                                                 <input class="form-check-input" type="checkbox" id="fiche-decision-49ms"
-                                                       style="width: 80px; height: 40px; cursor: pointer;">
-                                                <label class="form-check-label ms-3 fw-bold" for="fiche-decision-49ms" style="cursor: pointer;">
-                                                    49MS
+                                                       style="width: 80px; height: 40px; cursor: not-allowed;" disabled title="Réservé aux administrateurs">
+                                                <label class="form-check-label ms-3 fw-bold text-muted" for="fiche-decision-49ms" style="cursor: not-allowed;">
+                                                    49MS <small>(Admin uniquement)</small>
                                                 </label>
                                             </div>
                                         </div>
 
-                                        <div class="alert alert-warning mt-3">
+                                        <div id="decision-status-alert" class="alert alert-warning mt-3">
                                             <div class="d-flex align-items-center gap-2 mb-2">
-                                                <i class="bi bi-hourglass-split"></i>
-                                                <strong>En attente de décision</strong>
+                                                <i id="decision-status-icon" class="bi bi-hourglass-split"></i>
+                                                <strong id="decision-status-text">En attente de décision</strong>
                                             </div>
-                                            <p class="mb-0 small">Cette fiche sera soumise pour approbation.</p>
+                                            <p id="decision-status-description" class="mb-0 small">Cette fiche sera soumise pour approbation.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -184,10 +279,10 @@
                         </div>
 
                         <div class="d-flex gap-2 mt-4">
-                            <button type="button" id="preview-fiche-btn" class="btn btn-primary flex-grow-1">
+                            <button type="button" id="preview-fiche-btn" class="btn btn-primary flex-grow-1" onclick="window.FicheEtoileModule.showPreview()">
                                 <i class="bi bi-eye me-1"></i>Prévisualiser avant envoi
                             </button>
-                            <button type="button" id="reset-fiche-btn" class="btn btn-outline-secondary">
+                            <button type="button" id="reset-fiche-btn" class="btn btn-outline-secondary" onclick="window.FicheEtoileModule.resetForm()">
                                 <i class="bi bi-arrow-counterclockwise me-1"></i>Réinitialiser
                             </button>
                         </div>
@@ -230,10 +325,10 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle me-1"></i>Annuler
                     </button>
-                    <button type="button" class="btn btn-info" id="print-nncp-btn">
+                    <button type="button" class="btn btn-info" id="print-nncp-btn" onclick="window.FicheEtoileModule.printPreview()">
                         <i class="bi bi-printer me-1"></i>Imprimer
                     </button>
-                    <button type="button" class="btn btn-success" id="confirm-submit-btn">
+                    <button type="button" class="btn btn-success" id="confirm-submit-btn" onclick="window.FicheEtoileModule.submitFiche()">
                         <i class="bi bi-send me-1"></i>Confirmer et Envoyer
                     </button>
                 </div>
@@ -248,8 +343,8 @@
             <a class="dropdown-item" href="#" id="context-print">
                 <i class="bi bi-printer me-2"></i>Imprimer
             </a>
-            <a class="dropdown-item" href="#" id="context-edit">
-                <i class="bi bi-pencil me-2"></i>Modifier
+            <a class="dropdown-item" href="#" id="context-toggle-49ms">
+                <i class="bi bi-check-square me-2"></i>Cocher/Décocher 49MS
             </a>
             <div class="dropdown-divider"></div>
             <a class="dropdown-item text-danger" href="#" id="context-delete">

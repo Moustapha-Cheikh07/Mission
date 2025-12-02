@@ -79,10 +79,34 @@ function calculateIlotStats(ilotData) {
     let totalProduction = 0;
     let totalRevenue = 0;
 
+    // Stats pour hier (la veille)
+    let yesterdayRejectCost = 0;
+    let yesterdayRejectQuantity = 0;
+    let yesterdayProduction = 0;
+    let yesterdayRevenue = 0;
+
+    // Stats pour le mois courant
+    let monthRejectCost = 0;
+    let monthRejectQuantity = 0;
+    let monthProduction = 0;
+    let monthRevenue = 0;
+
     const machineStats = {};
     const rejectsByReason = {};
     const productionByMachine = {};
     const rejectsOnlyData = []; // Stocker les lignes avec rebuts pour le cache
+
+    // Calculer les dates pour filtrage
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    const yesterdayEnd = new Date(yesterday);
+    yesterdayEnd.setHours(23, 59, 59, 999);
+
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
     ilotData.forEach(row => {
         // Trouver les colonnes dynamiquement
@@ -108,9 +132,38 @@ function calculateIlotStats(ilotData) {
         const price = parseNumber(row[priceKey]);
         const reason = row[reasonKey] || 'Non spécifié';
 
+        // Trouver la colonne de date
+        const dateKey = Object.keys(row).find(key =>
+            key.toLowerCase().includes('date') && !key.toLowerCase().includes('creation')
+        );
+        let rowDate = null;
+        if (dateKey && row[dateKey]) {
+            rowDate = new Date(row[dateKey]);
+        }
+
         // TOUJOURS compter la production totale (pour le taux de rebuts)
         totalProduction += prodQty;
         totalRevenue += prodQty * price;
+
+        // Calculer pour hier si la date correspond
+        if (rowDate && rowDate >= yesterday && rowDate <= yesterdayEnd) {
+            yesterdayProduction += prodQty;
+            yesterdayRevenue += prodQty * price;
+            if (rejectQty > 0) {
+                yesterdayRejectQuantity += rejectQty;
+                yesterdayRejectCost += rejectQty * price;
+            }
+        }
+
+        // Calculer pour le mois courant si la date correspond
+        if (rowDate && rowDate >= monthStart && rowDate <= monthEnd) {
+            monthProduction += prodQty;
+            monthRevenue += prodQty * price;
+            if (rejectQty > 0) {
+                monthRejectQuantity += rejectQty;
+                monthRejectCost += rejectQty * price;
+            }
+        }
 
         // Compter les rebuts uniquement si rejectQty > 0
         if (rejectQty > 0) {
@@ -165,6 +218,18 @@ function calculateIlotStats(ilotData) {
             totalProduction: totalProduction.toFixed(0),
             totalRevenue: totalRevenue.toFixed(2),
             rejectRate: rejectRate
+        },
+        yesterday: {
+            rejectQuantity: yesterdayRejectQuantity.toFixed(0),
+            rejectCost: yesterdayRejectCost.toFixed(2),
+            producedQuantity: yesterdayProduction.toFixed(0),
+            producedValue: yesterdayRevenue.toFixed(2)
+        },
+        month: {
+            rejectQuantity: monthRejectQuantity.toFixed(0),
+            rejectCost: monthRejectCost.toFixed(2),
+            producedQuantity: monthProduction.toFixed(0),
+            producedValue: monthRevenue.toFixed(2)
         },
         machineStats: Object.values(machineStats).sort((a, b) => b.rejectCost - a.rejectCost),
         rejectsByReason: Object.values(rejectsByReason).sort((a, b) => b.cost - a.cost),

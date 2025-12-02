@@ -298,6 +298,23 @@ app.get('/api/fiches-etoile/generate-numero', async (req, res) => {
     }
 });
 
+// Helper function to normalize date (avoid timezone issues)
+function normalizeDate(dateString) {
+    if (!dateString) return dateString;
+
+    // Si déjà au format YYYY-MM-DD, retourner tel quel
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
+    }
+
+    // Si format avec timestamp, extraire juste la date
+    if (dateString.includes('T')) {
+        return dateString.split('T')[0];
+    }
+
+    return dateString;
+}
+
 // Create fiche etoile
 app.post('/api/fiches-etoile', async (req, res) => {
     try {
@@ -310,7 +327,7 @@ app.post('/api/fiches-etoile', async (req, res) => {
             libelle: req.body.libelle,
             quantite: req.body.quantite,
             prix_unitaire: req.body.prix_unitaire,
-            date_production: req.body.date_production,
+            date_production: normalizeDate(req.body.date_production),
             operateur: req.body.operateur || 'Non spécifié',
             probleme: req.body.probleme || 'Non spécifié',
             decision_49ms: req.body.decision_49ms || false,
@@ -333,23 +350,37 @@ app.post('/api/fiches-etoile', async (req, res) => {
 // Update fiche etoile
 app.put('/api/fiches-etoile/:id', async (req, res) => {
     try {
+        // Recalculer automatiquement le statut basé sur decision_49ms
+        let status = req.body.status || 'pending';
+        if (req.body.decision_49ms === true || req.body.decision_49ms === 'true') {
+            status = 'completed'; // Si 49MS coché → Vérifié
+        } else if (req.body.decision_49ms === false || req.body.decision_49ms === 'false') {
+            status = 'pending'; // Si 49MS non coché → En attente
+        }
+
         const fiche = {
             reference: req.body.reference,
             libelle: req.body.libelle,
             quantite: req.body.quantite,
             prix_unitaire: req.body.prix_unitaire,
-            date_production: req.body.date_production,
+            date_production: normalizeDate(req.body.date_production),
             operateur: req.body.operateur,
             probleme: req.body.probleme,
             decision_49ms: req.body.decision_49ms,
-            status: req.body.status
+            status: status // Utiliser le statut recalculé
         };
 
         const result = await db.updateFicheEtoile(req.params.id, fiche);
         if (result.changes === 0) {
             return res.status(404).json({ success: false, error: 'Fiche not found' });
         }
-        res.json({ success: true, changes: result.changes });
+
+        // Retourner aussi le numero_nncp pour la confirmation frontend
+        res.json({
+            success: true,
+            changes: result.changes,
+            numero_nncp: req.body.numero_nncp
+        });
     } catch (error) {
         console.error('Error updating fiche etoile:', error);
         res.status(500).json({ success: false, error: error.message });

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Îlot PM1 - Dashboard Qualité</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header avec animation */
+        .ilot-header {
+            background: linear-gradient(135deg, #3C8CE7 0%, #00EAFF 100%);
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ilot-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .company-logo {
+            height: 80px;
+            width: auto;
+            background: white;
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-title h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin: 0;
+            color: white;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-title p {
+            font-size: 1.3rem;
+            margin: 5px 0 0 0;
+            color: white;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        .header-right {
+            text-align: right;
+            color: white;
+        }
+
+        .current-date {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .last-update {
+            font-size: 1rem;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+
+        /* Container principal */
+        .main-container {
+            padding: 30px;
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+
+        /* Loading animation */
+        .loading-container {
+            text-align: center;
+            padding: 100px 20px;
+        }
+
+        .spinner {
+            border: 8px solid rgba(255, 255, 255, 0.2);
+            border-top: 8px solid #667eea;
+            border-right: 8px solid #764ba2;
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            margin: 0 auto 30px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.6rem;
+            color: white;
+            font-weight: 700;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Indicator columns */
+        .indicators-wrapper {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .indicator-column {
+            flex: 1;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .column-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .column-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .column-subtitle {
+            font-size: 1.1rem;
+            color: #888;
+            font-weight: 600;
+        }
+
+        /* Indicator cards */
+        .indicator-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .indicator-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .indicator-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+
+        .indicator-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .indicator-value {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .indicator-label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Progress bars */
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            transition: width 1s ease;
+            border-radius: 10px;
+        }
+
+        .progress-bar-fill.green {
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .progress-bar-fill.orange {
+            background: linear-gradient(90deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .progress-bar-fill.red {
+            background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="ilot-header">
+        <div class="header-content">
+            <div class="header-left">
+                <img src="../assets/images/logo.jpg" alt="Schneider Electric Logo" class="company-logo">
+                <div class="header-title">
+                    <h1><i class="bi bi-gear-wide-connected"></i> ÎLOT PM1</h1>
+                    <p>Dashboard Qualité & Production en Temps Réel</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="current-date" id="current-date"></div>
+                <div class="last-update">Dernière mise à jour: <span id="last-update">--:--</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Loading -->
+        <div id="loading" class="loading-container">
+            <div class="spinner"></div>
+            <div class="loading-text">Chargement des données PM1...</div>
+        </div>
+
+        <!-- Content (hidden until loaded) -->
+        <div id="content" style="display: none;">
+            <!-- Indicators Wrapper -->
+            <div class="indicators-wrapper">
+                <!-- Colonne Gauche: Indicateurs de la veille -->
+                <div class="indicator-column">
+                    <div class="column-header">
+                        <div class="column-title">📊 Période</div>
+                        <div class="column-subtitle">Indicateurs de la veille</div>
+                    </div>
+                    <div class="indicator-grid">
+                        <div class="indicator-card">
+                            <div class="indicator-icon"><i class="bi bi-box-seam"></i></div>
+                            <div class="indicator-value" id="yesterday-reject-qty">0</div>
+                            <div class="indicator-label">Nombre de rebuts</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill green" id="yesterday-qty-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="indicator-card">
+                            <div class="indicator-icon"><i class="bi bi-currency-euro"></i></div>
+                            <div class="indicator-value" id="yesterday-reject-value">0 €</div>
+                            <div class="indicator-label">Valeur des rebuts</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill orange" id="yesterday-value-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="indicator-card">
+                            <div class="indicator-icon"><i class="bi bi-box"></i></div>
+                            <div class="indicator-value" id="yesterday-produced-qty">0</div>
+                            <div class="indicator-label">Nombre d'unités produites</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill green" id="yesterday-produced-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="indicator-card">
+                            <div class="indicator-icon"><i class="bi bi-coin"></i></div>
+                            <div class="indicator-value" id="yesterday-produced-value">0 €</div>
+                            <div class="indicator-label">Valeur produite</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill green" id="yesterday-produced-value-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Colonne Droite: Indicateurs du mois courant -->
+                <div class="indicator-column">
+                    <div class="column-header">
+                        <div class="column-title">📊 Période</div>
+                        <div class="column-subtitle">Indicateurs du mois courant</div>
+                    </div>
+                    <div class="indicator-grid">
+                        <div class="indicator-card">
+                            <div class="indicator-icon"><i class="bi bi-box-seam"></i></div>
+                            <div class="indicator-value" id="month-reject-qty">0</div>
+                            <div class="indicator-label">Nombre de rebuts</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill red" id="month-qty-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="indicator-card">
+                            <div class="indicator-icon"><i class="bi bi-currency-euro"></i></div>
+                            <div class="indicator-value" id="month-reject-value">0 €</div>
+                            <div class="indicator-label">Valeur des rebuts</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill orange" id="month-value-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="indicator-card">
+                            <div class="indicator-icon"><i class="bi bi-box"></i></div>
+                            <div class="indicator-value" id="month-produced-qty">0</div>
+                            <div class="indicator-label">Nombre d'unités produites</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill green" id="month-produced-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="indicator-card">
+                            <div class="indicator-icon"><i class="bi bi-coin"></i></div>
+                            <div class="indicator-value" id="month-produced-value">0 €</div>
+                            <div class="indicator-label">Valeur produite</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill green" id="month-produced-value-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        const ILOT_NAME = 'PM1';
+        const API_URL = '/api/ilot/' + ILOT_NAME;
+
+        // Format number with spaces
+        function formatNumber(num) {
+            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        }
+
+        // Format currency
+        function formatCurrency(num) {
+            return formatNumber(num) + ' €';
+        }
+
+        // Update current date display
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('fr-FR', options);
+        }
+
+        // Animate number
+        function animateNumber(elementId, value, isCurrency = false) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+
+            let current = 0;
+            const increment = value / 50;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= value) {
+                    current = value;
+                    clearInterval(timer);
+                }
+                element.textContent = isCurrency ? formatCurrency(current) : formatNumber(current);
+            }, 20);
+        }
+
+        // Load ilot data from API
+        async function loadIlotData() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error('Erreur réseau: ' + response.status);
+
+                const data = await response.json();
+                console.log('Data received:', data);
+
+                if (!data.success) throw new Error(data.error || 'Erreur lors du chargement des données');
+
+                // Update last update time
+                if (data.lastUpdate) {
+                    document.getElementById('last-update').textContent = data.lastUpdate;
+                }
+
+                const stats = data.stats || {};
+                const summary = stats.summary || {};
+
+                // Pour le moment, on utilise les mêmes données pour hier et le mois
+                // TODO: Le backend devra fournir des données séparées pour hier et le mois courant
+
+                // Indicateurs de la veille (hier) - À implémenter côté backend
+                const yesterdayRejectQty = Math.round(summary.totalRejectQuantity / 30); // Approximation
+                const yesterdayRejectValue = Math.round(summary.totalRejectCost / 30);
+                const yesterdayProducedQty = Math.round(summary.totalProducedQuantity / 30) || 10000;
+                const yesterdayProducedValue = Math.round(summary.totalProducedValue / 30) || 50000;
+
+                animateNumber('yesterday-reject-qty', yesterdayRejectQty);
+                animateNumber('yesterday-reject-value', yesterdayRejectValue, true);
+                animateNumber('yesterday-produced-qty', yesterdayProducedQty);
+                animateNumber('yesterday-produced-value', yesterdayProducedValue, true);
+
+                // Indicateurs du mois courant
+                const monthRejectQty = summary.totalRejectQuantity || 0;
+                const monthRejectValue = summary.totalRejectCost || 0;
+                const monthProducedQty = summary.totalProducedQuantity || 300000;
+                const monthProducedValue = summary.totalProducedValue || 1500000;
+
+                animateNumber('month-reject-qty', monthRejectQty);
+                animateNumber('month-reject-value', monthRejectValue, true);
+                animateNumber('month-produced-qty', monthProducedQty);
+                animateNumber('month-produced-value', monthProducedValue, true);
+
+                // Animate progress bars
+                setTimeout(() => {
+                    document.getElementById('yesterday-qty-bar').style.width = '30%';
+                    document.getElementById('yesterday-value-bar').style.width = '45%';
+                    document.getElementById('yesterday-produced-bar').style.width = '80%';
+                    document.getElementById('yesterday-produced-value-bar').style.width = '75%';
+
+                    document.getElementById('month-qty-bar').style.width = '60%';
+                    document.getElementById('month-value-bar').style.width = '70%';
+                    document.getElementById('month-produced-bar').style.width = '85%';
+                    document.getElementById('month-produced-value-bar').style.width = '80%';
+                }, 500);
+
+                // Show content, hide loading
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading ilot data:', error);
+                document.getElementById('loading').innerHTML =
+                    '<div class="loading-text" style="color: #f5576c;">❌ Erreur: ' + error.message + '</div>';
+            }
+        }
+
+        // Initialize page
+        function initializeIlotPage() {
+            updateCurrentDate();
+            loadIlotData();
+        }
+
+        // Initialize on load
+        initializeIlotPage();
+    </script>
+</body>
+
+</html>

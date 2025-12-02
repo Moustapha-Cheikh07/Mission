@@ -4,6 +4,9 @@ const FicheEtoileModule = {
     references850MS: [],
     currentReference: null,
     currentNumeroNNCP: null,
+    editingFicheId: null, // ID de la fiche en cours de modification
+    currentFicheId: null, // ID de la fiche pour le menu contextuel
+    contextMenuInitialized: false, // Flag pour éviter la réinitialisation multiple
     API_URL: 'http://localhost:3000/api/fiches-etoile',
     REFERENCES_URL: 'http://localhost:3000/api/references/850ms',
     CACHE_KEY: 'references_850ms_cache',
@@ -149,40 +152,27 @@ const FicheEtoileModule = {
     },
 
     setupEventListeners: function() {
+        console.log('🔧 Configuration des event listeners (formulaire uniquement)...');
+
         // Changement de référence
         const refSelect = document.getElementById('fiche-reference');
         if (refSelect) {
             refSelect.addEventListener('change', () => this.onReferenceChange());
+            console.log('✅ Listener référence attaché');
         }
 
         // Changement de quantité
         const quantiteInput = document.getElementById('fiche-quantite');
         if (quantiteInput) {
             quantiteInput.addEventListener('input', () => this.calculatePrixTotal());
+            console.log('✅ Listener quantité attaché');
         }
 
-        // Preview button
-        const previewBtn = document.getElementById('preview-fiche-btn');
-        if (previewBtn) {
-            previewBtn.addEventListener('click', () => this.showPreview());
-        }
-
-        // Print button
-        const printBtn = document.getElementById('print-nncp-btn');
-        if (printBtn) {
-            printBtn.addEventListener('click', () => this.printPreview());
-        }
-
-        // Confirm submit button
-        const confirmBtn = document.getElementById('confirm-submit-btn');
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', () => this.submitFiche());
-        }
-
-        // Reset button
-        const resetBtn = document.getElementById('reset-fiche-btn');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => this.resetForm());
+        // Changement de la décision 49MS - Mettre à jour le statut en temps réel
+        const decision49msCheckbox = document.getElementById('fiche-decision-49ms');
+        if (decision49msCheckbox) {
+            decision49msCheckbox.addEventListener('change', () => this.updateDecisionStatus());
+            console.log('✅ Listener 49MS attaché');
         }
 
         // Search fiches
@@ -191,7 +181,10 @@ const FicheEtoileModule = {
             searchInput.addEventListener('input', (e) => {
                 this.filterFiches(e.target.value);
             });
+            console.log('✅ Listener recherche attaché');
         }
+
+        console.log('🎉 Listeners formulaire configurés (boutons utilisent onclick)');
     },
 
     /**
@@ -248,28 +241,68 @@ const FicheEtoileModule = {
     },
 
     /**
+     * Mettre à jour l'affichage du statut en fonction de la décision 49MS
+     */
+    updateDecisionStatus: function() {
+        const decision49ms = document.getElementById('fiche-decision-49ms').checked;
+        const statusAlert = document.getElementById('decision-status-alert');
+        const statusIcon = document.getElementById('decision-status-icon');
+        const statusText = document.getElementById('decision-status-text');
+        const statusDescription = document.getElementById('decision-status-description');
+
+        if (!statusAlert || !statusIcon || !statusText || !statusDescription) return;
+
+        if (decision49ms) {
+            // Case 49MS cochée → Statut "Vérifié"
+            statusAlert.className = 'alert alert-success mt-3';
+            statusIcon.className = 'bi bi-check-circle-fill';
+            statusText.textContent = 'Vérifié';
+            statusDescription.textContent = 'Cette fiche est validée par 49MS et sera enregistrée comme vérifiée.';
+        } else {
+            // Case 49MS non cochée → Statut "En attente"
+            statusAlert.className = 'alert alert-warning mt-3';
+            statusIcon.className = 'bi bi-hourglass-split';
+            statusText.textContent = 'En attente de décision';
+            statusDescription.textContent = 'Cette fiche sera soumise pour approbation.';
+        }
+    },
+
+    /**
      * Afficher la prévisualisation
      */
     showPreview: function() {
+        console.log('👁️ showPreview() appelée');
+
         // Récupérer les données du formulaire
         const reference = document.getElementById('fiche-reference').value;
         const libelle = document.getElementById('fiche-libelle').value;
         const quantite = parseInt(document.getElementById('fiche-quantite').value);
         const dateProduction = document.getElementById('fiche-date-production').value;
         const operateur = document.getElementById('fiche-operateur').value || 'Non spécifié';
-        const probleme = document.getElementById('fiche-probleme').value || 'Non spécifié';
+        const problemeSelect = document.getElementById('fiche-probleme');
+        const probleme = problemeSelect.value || 'Non spécifié';
         const decision49ms = document.getElementById('fiche-decision-49ms').checked;
 
-        // Validation
-        if (!reference || !libelle || !quantite || !dateProduction) {
+        console.log('📋 Données formulaire:', { reference, libelle, quantite, dateProduction, probleme, decision49ms });
+
+        // Validation des champs obligatoires
+        if (!reference || !libelle || !quantite || !dateProduction || !probleme) {
+            console.error('❌ Champs obligatoires manquants');
             this.showError('Veuillez remplir tous les champs obligatoires (*)');
             return;
         }
 
-        if (!this.currentReference) {
-            this.showError('Référence invalide');
+        // Assurer que currentReference est défini
+        this.ensureCurrentReference(reference, libelle);
+
+        // Si toujours pas de currentReference, c'est une erreur
+        if (!this.currentReference || !this.currentReference.prix_unitaire) {
+            console.error('❌ Impossible de déterminer le prix unitaire');
+            this.showError('Erreur: prix unitaire introuvable pour cette référence');
             return;
         }
+
+        console.log('✅ Validation réussie, génération du HTML');
 
         // Calculer le prix total
         const prixTotal = (quantite * this.currentReference.prix_unitaire).toFixed(2);
@@ -312,7 +345,7 @@ const FicheEtoileModule = {
                                     </tr>
                                     <tr>
                                         <th>Date de production:</th>
-                                        <td>${new Date(dateProduction).toLocaleDateString('fr-FR')}</td>
+                                        <td>${this.formatDate(dateProduction)}</td>
                                     </tr>
                                     <tr>
                                         <th>Opérateur:</th>
@@ -336,7 +369,7 @@ const FicheEtoileModule = {
                                     </div>
                                 </div>
                                 <div class="alert ${decision49ms ? 'alert-success' : 'alert-warning'} mb-0">
-                                    <strong>Statut:</strong> ${decision49ms ? 'Approuvé pour 49MS' : 'En attente de décision'}
+                                    <strong>Statut:</strong> ${decision49ms ? '✅ Vérifié (49MS)' : '⏳ En attente de décision'}
                                 </div>
                             </div>
                         </div>
@@ -364,6 +397,50 @@ const FicheEtoileModule = {
         // Ouvrir la modal
         const modal = new bootstrap.Modal(document.getElementById('preview-nncp-modal'));
         modal.show();
+        console.log('✅ Modal de prévisualisation ouverte');
+    },
+
+    /**
+     * S'assurer que currentReference est défini correctement
+     */
+    ensureCurrentReference: function(reference, libelle) {
+        // Si currentReference existe déjà et correspond à la référence actuelle, OK
+        if (this.currentReference && this.currentReference.reference === reference) {
+            console.log('✅ currentReference déjà défini:', this.currentReference);
+            return;
+        }
+
+        console.log('🔄 Tentative de reconstruction de currentReference...');
+
+        // Essayer de récupérer depuis le select
+        const refSelect = document.getElementById('fiche-reference');
+        const selectedOption = refSelect.options[refSelect.selectedIndex];
+
+        if (selectedOption && selectedOption.dataset.prixUnitaire) {
+            this.currentReference = {
+                reference: reference,
+                libelle: selectedOption.dataset.libelle || libelle,
+                prix_unitaire: parseFloat(selectedOption.dataset.prixUnitaire)
+            };
+            console.log('✅ currentReference reconstruit depuis le select:', this.currentReference);
+            return;
+        }
+
+        // Si on est en mode édition, chercher dans la liste des fiches
+        if (this.editingFicheId !== null) {
+            const fiche = this.fiches.find(f => f.id === this.editingFicheId);
+            if (fiche) {
+                this.currentReference = {
+                    reference: fiche.reference,
+                    libelle: fiche.libelle,
+                    prix_unitaire: fiche.prix_unitaire
+                };
+                console.log('✅ currentReference reconstruit depuis la fiche en édition:', this.currentReference);
+                return;
+            }
+        }
+
+        console.error('❌ Impossible de reconstruire currentReference');
     },
 
     /**
@@ -405,27 +482,46 @@ const FicheEtoileModule = {
     },
 
     /**
-     * Soumettre la fiche
+     * Soumettre la fiche (création ou modification)
      */
     submitFiche: async function() {
+        console.log('🚀 submitFiche() appelée');
+        console.log('📊 Mode édition:', this.editingFicheId);
+
         // Récupérer les données du formulaire
         const reference = document.getElementById('fiche-reference').value;
         const libelle = document.getElementById('fiche-libelle').value;
         const quantite = parseInt(document.getElementById('fiche-quantite').value);
         const dateProduction = document.getElementById('fiche-date-production').value;
         const operateur = document.getElementById('fiche-operateur').value || 'Non spécifié';
-        const probleme = document.getElementById('fiche-probleme').value || 'Non spécifié';
+        const problemeSelect = document.getElementById('fiche-probleme');
+        const probleme = problemeSelect.value || 'Non spécifié';
         const decision49ms = document.getElementById('fiche-decision-49ms').checked;
 
+        console.log('📝 Données formulaire:', { reference, libelle, quantite, dateProduction, probleme, decision49ms });
+        console.log('📦 currentReference:', this.currentReference);
+
         // Validation
-        if (!reference || !libelle || !quantite || !dateProduction) {
-            this.showError('Veuillez remplir tous les champs obligatoires (*) '          );
+        if (!reference || !libelle || !quantite || !dateProduction || !probleme) {
+            console.error('❌ Validation échouée: champs obligatoires manquants');
+            this.showError('Veuillez remplir tous les champs obligatoires (*)');
             return;
         }
 
-        if (!this.currentReference) {
-            this.showError('Référence invalide');
+        // Assurer que currentReference est défini
+        this.ensureCurrentReference(reference, libelle);
+
+        // Si toujours pas de currentReference, c'est une erreur
+        if (!this.currentReference || !this.currentReference.prix_unitaire) {
+            console.error('❌ Validation échouée: prix unitaire introuvable');
+            this.showError('Erreur: prix unitaire introuvable pour cette référence');
             return;
+        }
+
+        // Déterminer le statut en fonction de la décision 49MS
+        let status = 'pending'; // Par défaut: en attente
+        if (decision49ms) {
+            status = 'completed'; // Si 49MS coché → Vérifié
         }
 
         // Préparer les données
@@ -439,24 +535,42 @@ const FicheEtoileModule = {
             operateur: operateur,
             probleme: probleme,
             decision_49ms: decision49ms,
-            status: 'pending'
+            status: status
         };
 
         console.log('📤 Envoi de la fiche:', ficheData);
 
         try {
-            const response = await fetch(this.API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(ficheData)
-            });
+            let response;
+            let isEditing = this.editingFicheId !== null;
+
+            if (isEditing) {
+                // MODE MODIFICATION - Utiliser PUT
+                console.log(`📝 Modification de la fiche ID: ${this.editingFicheId}`);
+                response = await fetch(`${this.API_URL}/${this.editingFicheId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(ficheData)
+                });
+            } else {
+                // MODE CRÉATION - Utiliser POST
+                console.log('📝 Création d\'une nouvelle fiche');
+                response = await fetch(this.API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(ficheData)
+                });
+            }
 
             const result = await response.json();
 
             if (result.success) {
-                console.log('✅ Fiche créée avec succès:', result.numero_nncp);
+                const action = isEditing ? 'modifiée' : 'créée';
+                console.log(`✅ Fiche ${action} avec succès:`, result.numero_nncp || ficheData.numero_nncp);
 
                 // Fermer la modal de prévisualisation si elle est ouverte
                 const modal = bootstrap.Modal.getInstance(document.getElementById('preview-nncp-modal'));
@@ -464,12 +578,18 @@ const FicheEtoileModule = {
                     modal.hide();
                 }
 
-                this.showSuccess(`Fiche ${result.numero_nncp} créée avec succès!`);
+                const statusMessage = decision49ms ? ' (Statut: ✅ Vérifié)' : ' (Statut: ⏳ En attente)';
+                this.showSuccess(`Fiche ${result.numero_nncp || ficheData.numero_nncp} ${action} avec succès!${statusMessage}`);
                 this.resetForm();
-                this.loadNextNumeroNNCP(); // Charger le prochain numéro
+
+                if (!isEditing) {
+                    this.loadNextNumeroNNCP(); // Charger le prochain numéro seulement si création
+                }
+
                 this.loadFichesFromServer(); // Rafraîchir la liste
             } else {
-                this.showError('Erreur lors de la création: ' + result.error);
+                const action = isEditing ? 'la modification' : 'la création';
+                this.showError(`Erreur lors de ${action}: ` + result.error);
             }
         } catch (error) {
             console.error('❌ Erreur réseau:', error);
@@ -484,9 +604,31 @@ const FicheEtoileModule = {
         document.getElementById('fiche-etoile-form').reset();
         document.getElementById('fiche-libelle').value = '';
         document.getElementById('fiche-prix-total').value = '';
-        document.getElementById('fiche-decision-49ms').checked = false;
+
+        // Réinitialiser et désactiver la case 49MS
+        const decision49msCheckbox = document.getElementById('fiche-decision-49ms');
+        const decision49msLabel = document.querySelector('label[for="fiche-decision-49ms"]');
+        decision49msCheckbox.checked = false;
+        decision49msCheckbox.disabled = true;
+        decision49msCheckbox.style.cursor = 'not-allowed';
+        decision49msLabel.style.cursor = 'not-allowed';
+        decision49msLabel.classList.add('text-muted');
+        decision49msLabel.innerHTML = '49MS <small>(Admin uniquement)</small>';
+
         this.currentReference = null;
+        this.editingFicheId = null; // Réinitialiser le mode édition
         this.hideError();
+
+        // Mettre à jour le titre pour indiquer mode création
+        const numericSpan = document.getElementById('current-numero-nncp');
+        if (numericSpan && this.currentNumeroNNCP) {
+            numericSpan.textContent = this.currentNumeroNNCP;
+            numericSpan.classList.remove('text-warning');
+            numericSpan.classList.add('text-primary');
+        }
+
+        // Réinitialiser le statut visuel
+        this.updateDecisionStatus();
     },
 
     /**
@@ -515,50 +657,88 @@ const FicheEtoileModule = {
         if (!container) return;
 
         if (this.fiches.length === 0) {
-            container.innerHTML = '<p class="text-muted text-center py-4">Aucune fiche enregistrée</p>';
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox" style="font-size: 4rem; color: #dee2e6;"></i>
+                    <p class="text-muted mt-3">Aucune fiche enregistrée</p>
+                </div>
+            `;
             return;
         }
 
-        container.innerHTML = this.fiches.map(fiche => `
-            <div class="card mb-3 fiche-card" data-fiche-id="${fiche.id}" style="cursor: pointer;">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
+        container.innerHTML = this.fiches.map(fiche => {
+            const statusInfo = this.getStatusInfo(fiche.status);
+            const decision49msIcon = fiche.decision_49ms
+                ? '<i class="bi bi-check-circle-fill text-success"></i>'
+                : '<i class="bi bi-x-circle-fill text-danger"></i>';
+
+            return `
+            <div class="fiche-card-modern" data-fiche-id="${fiche.id}">
+                <div class="fiche-card-header">
+                    <div class="fiche-numero-ref">
+                        <span class="fiche-numero">${fiche.numero_nncp}</span>
+                        <h6 class="fiche-reference">${fiche.reference}</h6>
+                    </div>
+                    <span class="fiche-status-badge" style="background: ${statusInfo.color};">
+                        <i class="bi ${statusInfo.icon} me-1"></i>${statusInfo.label}
+                    </span>
+                </div>
+
+                <p class="fiche-libelle">${fiche.libelle}</p>
+
+                <div class="fiche-info-grid">
+                    <div class="fiche-info-item">
+                        <i class="bi bi-box-seam info-icon"></i>
                         <div>
-                            <h6 class="mb-1">
-                                <span class="badge bg-primary">${fiche.numero_nncp}</span>
-                                ${fiche.reference}
-                            </h6>
-                            <p class="text-muted small mb-1">${fiche.libelle}</p>
-                        </div>
-                        <span class="badge ${this.getStatusBadgeClass(fiche.status)}">
-                            ${this.getStatusLabel(fiche.status)}
-                        </span>
-                    </div>
-                    <div class="row g-2 small">
-                        <div class="col-md-3">
-                            <strong>Quantité:</strong> ${fiche.quantite}
-                        </div>
-                        <div class="col-md-3">
-                            <strong>Prix:</strong> ${fiche.prix_total} €
-                        </div>
-                        <div class="col-md-3">
-                            <strong>Date:</strong> ${new Date(fiche.date_production).toLocaleDateString('fr-FR')}
-                        </div>
-                        <div class="col-md-3">
-                            <strong>49MS:</strong> ${fiche.decision_49ms ? '✅ Oui' : '❌ Non'}
+                            <span class="info-label">Quantité</span>
+                            <span class="info-value">${fiche.quantite}</span>
                         </div>
                     </div>
-                    ${fiche.probleme !== 'Non spécifié' ? `
-                    <div class="mt-2 small">
-                        <strong>Problème:</strong> ${fiche.probleme}
+
+                    <div class="fiche-info-item">
+                        <i class="bi bi-currency-euro info-icon"></i>
+                        <div>
+                            <span class="info-label">Prix total</span>
+                            <span class="info-value">${fiche.prix_total} €</span>
+                        </div>
                     </div>
-                    ` : ''}
-                    <div class="mt-2 text-end">
-                        <small class="text-muted"><i class="bi bi-mouse2-fill me-1"></i>Clic droit pour les options</small>
+
+                    <div class="fiche-info-item">
+                        <i class="bi bi-calendar-event info-icon"></i>
+                        <div>
+                            <span class="info-label">Date production</span>
+                            <span class="info-value">${this.formatDate(fiche.date_production)}</span>
+                        </div>
+                    </div>
+
+                    <div class="fiche-info-item">
+                        <i class="bi bi-person-badge info-icon"></i>
+                        <div>
+                            <span class="info-label">Opérateur</span>
+                            <span class="info-value">${fiche.operateur || 'Non spécifié'}</span>
+                        </div>
                     </div>
                 </div>
+
+                ${fiche.probleme && fiche.probleme !== 'Non spécifié' ? `
+                <div class="fiche-probleme">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <span>${fiche.probleme}</span>
+                </div>
+                ` : ''}
+
+                <div class="fiche-footer">
+                    <div class="fiche-49ms">
+                        ${decision49msIcon}
+                        <span>${fiche.decision_49ms ? 'Vérifié 49MS' : 'En attente 49MS'}</span>
+                    </div>
+                    <span class="fiche-context-hint">
+                        <i class="bi bi-mouse2-fill me-1"></i>Clic droit
+                    </span>
+                </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
 
         // Ajouter les événements de clic droit
         this.setupContextMenuEvents();
@@ -607,7 +787,7 @@ const FicheEtoileModule = {
                             <strong>Prix:</strong> ${fiche.prix_total} €
                         </div>
                         <div class="col-md-3">
-                            <strong>Date:</strong> ${new Date(fiche.date_production).toLocaleDateString('fr-FR')}
+                            <strong>Date:</strong> ${this.formatDate(fiche.date_production)}
                         </div>
                         <div class="col-md-3">
                             <strong>49MS:</strong> ${fiche.decision_49ms ? '✅ Oui' : '❌ Non'}
@@ -616,6 +796,64 @@ const FicheEtoileModule = {
                 </div>
             </div>
         `).join('');
+    },
+
+    /**
+     * Formater une date correctement (sans problème de timezone)
+     */
+    formatDate: function(dateString) {
+        if (!dateString) return 'Non spécifié';
+
+        // Si la date contient 'T' (format ISO), extraire juste la partie date
+        let datePart = dateString;
+        if (typeof dateString === 'string' && dateString.includes('T')) {
+            datePart = dateString.split('T')[0];
+        }
+
+        // Convertir en string si ce n'est pas déjà le cas
+        datePart = String(datePart);
+
+        // Parser directement la chaîne YYYY-MM-DD
+        const parts = datePart.split('-');
+        if (parts.length !== 3) {
+            return dateString;
+        }
+
+        const year = parts[0];
+        const month = parts[1].padStart(2, '0');
+        const day = parts[2].padStart(2, '0');
+
+        // Retourner au format DD/MM/YYYY sans utiliser Date()
+        return `${day}/${month}/${year}`;
+    },
+
+    /**
+     * Obtenir les informations complètes du statut (couleur, icône, libellé)
+     */
+    getStatusInfo: function(status) {
+        const statusMap = {
+            'pending': {
+                color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                icon: 'bi-hourglass-split',
+                label: 'En attente'
+            },
+            'in_progress': {
+                color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                icon: 'bi-arrow-repeat',
+                label: 'En cours'
+            },
+            'completed': {
+                color: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                icon: 'bi-check-circle',
+                label: 'Vérifié'
+            },
+            'cancelled': {
+                color: 'linear-gradient(135deg, #a8a8a8 0%, #6c757d 100%)',
+                icon: 'bi-x-circle',
+                label: 'Annulé'
+            }
+        };
+        return statusMap[status] || statusMap['pending'];
     },
 
     /**
@@ -638,7 +876,7 @@ const FicheEtoileModule = {
         const labels = {
             'pending': 'En attente',
             'in_progress': 'En cours',
-            'completed': 'Terminé',
+            'completed': 'Vérifié',
             'cancelled': 'Annulé'
         };
         return labels[status] || status;
@@ -698,7 +936,6 @@ const FicheEtoileModule = {
     setupContextMenuEvents: function() {
         const contextMenu = document.getElementById('fiche-context-menu');
         const isAdmin = typeof SimpleAuth !== 'undefined' && SimpleAuth.isAdmin();
-        let currentFicheId = null;
 
         // Afficher le bon menu selon le rôle
         if (isAdmin) {
@@ -710,11 +947,13 @@ const FicheEtoileModule = {
         }
 
         // Événement clic droit sur les fiches
-        document.querySelectorAll('.fiche-card').forEach(card => {
+        document.querySelectorAll('.fiche-card-modern').forEach(card => {
             card.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
 
-                currentFicheId = parseInt(card.dataset.ficheId);
+                // Stocker l'ID dans la variable globale du module
+                this.currentFicheId = parseInt(card.dataset.ficheId);
+                console.log('📌 Fiche sélectionnée ID:', this.currentFicheId);
 
                 // Positionner le menu
                 contextMenu.style.display = 'block';
@@ -723,40 +962,51 @@ const FicheEtoileModule = {
             });
         });
 
-        // Fermer le menu en cliquant ailleurs
-        document.addEventListener('click', () => {
-            contextMenu.style.display = 'none';
-        });
+        // Ne configurer les événements de menu qu'une seule fois
+        if (!this.contextMenuInitialized) {
+            console.log('🔧 Initialisation unique des événements de menu contextuel');
 
-        // Actions Admin
-        if (isAdmin) {
-            document.getElementById('context-print').addEventListener('click', (e) => {
-                e.preventDefault();
-                this.printFiche(currentFicheId);
+            // Fermer le menu en cliquant ailleurs
+            document.addEventListener('click', () => {
                 contextMenu.style.display = 'none';
             });
 
-            document.getElementById('context-edit').addEventListener('click', (e) => {
-                e.preventDefault();
-                this.editFiche(currentFicheId);
-                contextMenu.style.display = 'none';
-            });
+            // Actions Admin
+            if (isAdmin) {
+                document.getElementById('context-print').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('🖨️ Impression fiche ID:', this.currentFicheId);
+                    this.printFiche(this.currentFicheId);
+                    contextMenu.style.display = 'none';
+                });
 
-            document.getElementById('context-delete').addEventListener('click', (e) => {
-                e.preventDefault();
-                const fiche = this.fiches.find(f => f.id === currentFicheId);
-                if (fiche) {
-                    this.deleteFiche(currentFicheId, fiche.numero_nncp);
-                }
-                contextMenu.style.display = 'none';
-            });
-        } else {
-            // Action Visiteur
-            document.getElementById('context-download').addEventListener('click', (e) => {
-                e.preventDefault();
-                this.downloadFiche(currentFicheId);
-                contextMenu.style.display = 'none';
-            });
+                document.getElementById('context-toggle-49ms').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('🔄 Toggle 49MS fiche ID:', this.currentFicheId);
+                    this.toggle49MS(this.currentFicheId);
+                    contextMenu.style.display = 'none';
+                });
+
+                document.getElementById('context-delete').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('🗑️ Suppression fiche ID:', this.currentFicheId);
+                    const fiche = this.fiches.find(f => f.id === this.currentFicheId);
+                    if (fiche) {
+                        this.deleteFiche(this.currentFicheId, fiche.numero_nncp);
+                    }
+                    contextMenu.style.display = 'none';
+                });
+            } else {
+                // Action Visiteur
+                document.getElementById('context-download').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('📥 Téléchargement fiche ID:', this.currentFicheId);
+                    this.downloadFiche(this.currentFicheId);
+                    contextMenu.style.display = 'none';
+                });
+            }
+
+            this.contextMenuInitialized = true;
         }
     },
 
@@ -789,7 +1039,7 @@ const FicheEtoileModule = {
                         <tr><th>Quantité:</th><td><strong>${fiche.quantite}</strong></td></tr>
                         <tr><th>Prix unitaire:</th><td>${fiche.prix_unitaire.toFixed(5)} €</td></tr>
                         <tr><th>Prix total:</th><td><strong style="color: #198754;">${prixTotal} €</strong></td></tr>
-                        <tr><th>Date de production:</th><td>${new Date(fiche.date_production).toLocaleDateString('fr-FR')}</td></tr>
+                        <tr><th>Date de production:</th><td>${this.formatDate(fiche.date_production)}</td></tr>
                         <tr><th>Opérateur:</th><td>${fiche.operateur || 'Non spécifié'}</td></tr>
                     </tbody>
                 </table>
@@ -858,29 +1108,153 @@ const FicheEtoileModule = {
             return;
         }
 
-        // Remplir le formulaire avec les données de la fiche
-        document.getElementById('fiche-reference').value = fiche.reference;
-        document.getElementById('fiche-libelle').value = fiche.libelle;
-        document.getElementById('fiche-quantite').value = fiche.quantite;
-        document.getElementById('fiche-date-production').value = fiche.date_production;
-        document.getElementById('fiche-operateur').value = fiche.operateur || '';
-        document.getElementById('fiche-probleme').value = fiche.probleme || '';
-        document.getElementById('fiche-decision-49ms').checked = fiche.decision_49ms;
+        console.log('✏️ Edition de la fiche:', fiche);
 
-        // Mettre à jour la référence courante
+        // Activer le mode édition
+        this.editingFicheId = ficheId;
+
+        // Mettre à jour la référence courante AVANT de remplir le formulaire
+        // C'est crucial pour que la validation fonctionne
         this.currentReference = {
             reference: fiche.reference,
             libelle: fiche.libelle,
             prix_unitaire: fiche.prix_unitaire
         };
+        console.log('📦 currentReference défini:', this.currentReference);
+
+        // Mettre à jour le numéro NNCP pour afficher celui de la fiche en cours d'édition
+        this.currentNumeroNNCP = fiche.numero_nncp;
+        const numericSpan = document.getElementById('current-numero-nncp');
+        if (numericSpan) {
+            numericSpan.textContent = `${fiche.numero_nncp} (MODIFICATION)`;
+            numericSpan.classList.remove('text-primary');
+            numericSpan.classList.add('text-warning');
+        }
+
+        // Convertir la date au format YYYY-MM-DD pour l'input HTML5
+        let dateFormatted = fiche.date_production;
+        if (dateFormatted && dateFormatted.includes('T')) {
+            // Si c'est un timestamp ISO (2025-01-12T00:00:00.000Z), extraire juste la date
+            dateFormatted = dateFormatted.split('T')[0];
+        } else if (dateFormatted && dateFormatted.includes('/')) {
+            // Si c'est au format DD/MM/YYYY, convertir en YYYY-MM-DD
+            const parts = dateFormatted.split('/');
+            if (parts.length === 3) {
+                dateFormatted = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+        }
+        console.log('📅 Date production:', fiche.date_production, '→', dateFormatted);
+
+        // Remplir le formulaire avec les données de la fiche
+        document.getElementById('fiche-reference').value = fiche.reference;
+        document.getElementById('fiche-libelle').value = fiche.libelle;
+        document.getElementById('fiche-quantite').value = fiche.quantite;
+        document.getElementById('fiche-date-production').value = dateFormatted;
+        document.getElementById('fiche-operateur').value = fiche.operateur || '';
+
+        // Gérer le champ problème (select au lieu de textarea)
+        const problemeSelect = document.getElementById('fiche-probleme');
+        if (problemeSelect) {
+            problemeSelect.value = fiche.probleme || '';
+        }
+
+        // Activer la case 49MS pour les admins en mode modification
+        const decision49msCheckbox = document.getElementById('fiche-decision-49ms');
+        const decision49msLabel = document.querySelector('label[for="fiche-decision-49ms"]');
+        const isAdmin = typeof SimpleAuth !== 'undefined' && SimpleAuth.isAdmin();
+
+        if (isAdmin) {
+            // Admin en mode modification : activer la case 49MS
+            decision49msCheckbox.disabled = false;
+            decision49msCheckbox.style.cursor = 'pointer';
+            decision49msCheckbox.checked = fiche.decision_49ms;
+            decision49msLabel.style.cursor = 'pointer';
+            decision49msLabel.classList.remove('text-muted');
+            decision49msLabel.innerHTML = '<strong>49MS</strong> <small class="text-success">(Vous pouvez modifier)</small>';
+            console.log('✅ Case 49MS activée pour admin');
+        } else {
+            // Visiteur : afficher l'état mais désactiver
+            decision49msCheckbox.checked = fiche.decision_49ms;
+            decision49msCheckbox.disabled = true;
+            console.log('⚠️ Case 49MS désactivée pour visiteur');
+        }
 
         // Calculer le prix total
         this.calculatePrixTotal();
 
+        // Mettre à jour le statut visuel selon la case 49MS
+        this.updateDecisionStatus();
+
         // Scroll vers le formulaire
         document.getElementById('fiche-etoile-form').scrollIntoView({ behavior: 'smooth' });
 
-        this.showSuccess(`📝 Modification de la fiche ${fiche.numero_nncp} - Modifiez les champs puis prévisualisez`);
+        const editMessage = isAdmin
+            ? `📝 Modification de la fiche ${fiche.numero_nncp} - Vous pouvez modifier les champs et cocher/décocher 49MS puis renvoyer`
+            : `📝 Modification de la fiche ${fiche.numero_nncp} - Modifiez les champs puis prévisualisez et envoyez`;
+        this.showSuccess(editMessage);
+    },
+
+    /**
+     * Basculer l'état 49MS d'une fiche (Admin seulement)
+     */
+    toggle49MS: async function(ficheId) {
+        const fiche = this.fiches.find(f => f.id === ficheId);
+        if (!fiche) {
+            alert('Fiche introuvable');
+            return;
+        }
+
+        const newDecision49ms = !fiche.decision_49ms;
+        const newStatus = newDecision49ms ? 'completed' : 'pending';
+
+        console.log(`🔄 Toggle 49MS pour fiche ${fiche.numero_nncp}: ${fiche.decision_49ms} → ${newDecision49ms}`);
+
+        // Formater la date correctement (YYYY-MM-DD)
+        let dateFormatted = fiche.date_production;
+        if (dateFormatted && dateFormatted.includes('T')) {
+            // Si c'est un timestamp ISO (2025-01-12T00:00:00.000Z), extraire juste la date
+            dateFormatted = dateFormatted.split('T')[0];
+        } else if (dateFormatted && dateFormatted.includes('/')) {
+            // Si c'est au format DD/MM/YYYY, convertir en YYYY-MM-DD
+            const parts = dateFormatted.split('/');
+            if (parts.length === 3) {
+                dateFormatted = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+        }
+
+        try {
+            const response = await fetch(`${this.API_URL}/${ficheId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    numero_nncp: fiche.numero_nncp,
+                    reference: fiche.reference,
+                    libelle: fiche.libelle,
+                    quantite: fiche.quantite,
+                    prix_unitaire: fiche.prix_unitaire,
+                    date_production: dateFormatted,
+                    operateur: fiche.operateur,
+                    probleme: fiche.probleme,
+                    decision_49ms: newDecision49ms,
+                    status: newStatus
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const statusLabel = newDecision49ms ? '✅ Vérifié' : '⏳ En attente';
+                this.showSuccess(`49MS ${newDecision49ms ? 'coché' : 'décoché'} pour la fiche ${fiche.numero_nncp} (Statut: ${statusLabel})`);
+                this.loadFichesFromServer(); // Rafraîchir la liste
+            } else {
+                this.showError('Erreur lors de la mise à jour: ' + result.error);
+            }
+        } catch (error) {
+            console.error('❌ Erreur réseau:', error);
+            this.showError('Erreur de connexion au serveur');
+        }
     },
 
     /**
@@ -919,6 +1293,20 @@ const FicheEtoileModule = {
         this.printFiche(ficheId);
     }
 };
+
+// Exporter le module globalement pour permettre l'utilisation avec onclick
+window.FicheEtoileModule = FicheEtoileModule;
+console.log('🌍 FicheEtoileModule exporté globalement:', window.FicheEtoileModule);
+console.log('🔍 Test d\'accessibilité - Essayez: window.FicheEtoileModule.showPreview()');
+
+// Test immédiat
+setTimeout(() => {
+    if (window.FicheEtoileModule) {
+        console.log('✅ FicheEtoileModule est accessible après 1 seconde');
+    } else {
+        console.error('❌ FicheEtoileModule n\'est PAS accessible après 1 seconde');
+    }
+}, 1000);
 
 // Initialize only on forms.html page
 if (document.readyState === 'loading') {

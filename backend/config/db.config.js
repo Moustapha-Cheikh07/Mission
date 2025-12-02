@@ -8,5 +8,13 @@ module.exports = {
     connectTimeout: 10000, // 10 seconds
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    // typeCast pour intercepter les dates AVANT conversion - SOLUTION DÉFINITIVE
+    typeCast: function(field, next) {
+        if (field.type === 'DATE') {
+            // Retourner la date brute comme une chaîne YYYY-MM-DD sans aucune conversion timezone
+            return field.string();
+        }
+        return next();
+    }
 };
