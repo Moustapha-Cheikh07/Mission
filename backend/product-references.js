@@ -1,14 +1,13 @@
 const xlsx = require('xlsx');
 const path = require('path');
 const fs = require('fs');
+const { createModuleLogger } = require('./logger');
+
+// Logger pour le module product-references
+const log = createModuleLogger('PRODUCT-REFS');
 
 // Configuration des chemins
-// Utiliser la variable d'environnement ou le chemin par défaut
-const EXCEL_FILE_PATH = process.env.EXCEL_FILE_PATH
-    ? (path.isAbsolute(process.env.EXCEL_FILE_PATH)
-        ? process.env.EXCEL_FILE_PATH
-        : path.join(__dirname, process.env.EXCEL_FILE_PATH))
-    : path.join(__dirname, 'data', 'sap_export.xlsx');
+const EXCEL_FILE_PATH = path.join(__dirname, 'data', 'sap_export.xlsx');
 
 // Cache en mémoire pour les références 850MS
 let referencesCache = null;
@@ -20,11 +19,14 @@ const CACHE_DURATION = 60 * 60 * 1000; // 1 heure en millisecondes
  */
 function loadReferencesFromExcel() {
     try {
+        log.info('Loading 850MS references from Excel...');
         console.log('📖 Lecture du fichier Excel pour les références 850MS...');
 
         // Vérifier si le fichier Excel existe
         if (!fs.existsSync(EXCEL_FILE_PATH)) {
-            throw new Error(`Fichier Excel non trouvé : ${EXCEL_FILE_PATH}`);
+            const error = `Excel file not found: ${EXCEL_FILE_PATH}`;
+            log.error(error);
+            throw new Error(error);
         }
 
         // Lire le fichier Excel
@@ -84,6 +86,7 @@ function loadReferencesFromExcel() {
         const references = Array.from(referencesMap.values())
             .sort((a, b) => a.reference.localeCompare(b.reference));
 
+        log.info(`${references.length} 850MS references loaded and cached`);
         console.log(`✅ ${references.length} références 850MS chargées et mises en cache`);
 
         return {
@@ -93,6 +96,7 @@ function loadReferencesFromExcel() {
         };
 
     } catch (error) {
+        log.error('Error loading 850MS references', { error: error.message });
         console.error('❌ Erreur lors de la récupération des références 850MS:', error);
         return {
             success: false,
@@ -110,11 +114,13 @@ function get850MSReferences() {
 
     // Vérifier si le cache est valide
     if (referencesCache && cacheTimestamp && (now - cacheTimestamp < CACHE_DURATION)) {
+        log.debug('Using cache for 850MS references');
         console.log('⚡ Utilisation du cache pour les références 850MS');
         return referencesCache;
     }
 
     // Recharger depuis l'Excel
+    log.info('Reloading 850MS references from Excel (cache expired or not available)');
     const result = loadReferencesFromExcel();
 
     // Mettre en cache si succès
@@ -150,6 +156,7 @@ function searchReference(searchTerm) {
         };
 
     } catch (error) {
+        log.error('Error searching reference', { error: error.message });
         console.error('❌ Erreur lors de la recherche de référence:', error);
         return {
             success: false,
@@ -164,6 +171,7 @@ function searchReference(searchTerm) {
  */
 function getReferenceInfo(material) {
     try {
+        log.debug(`Getting reference info for: ${material}`);
         const allRefs = get850MSReferences();
 
         if (!allRefs.success) {
@@ -173,18 +181,21 @@ function getReferenceInfo(material) {
         const ref = allRefs.data.find(r => r.reference === material);
 
         if (!ref) {
+            log.warn(`Reference not found: ${material}`);
             return {
                 success: false,
                 error: 'Référence non trouvée'
             };
         }
 
+        log.debug(`Reference found: ${material}`);
         return {
             success: true,
             data: ref
         };
 
     } catch (error) {
+        log.error('Error getting reference info', { material, error: error.message });
         console.error('❌ Erreur lors de la récupération de la référence:', error);
         return {
             success: false,

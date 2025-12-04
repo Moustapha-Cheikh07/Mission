@@ -1,14 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 const xlsx = require('xlsx');
+const { createModuleLogger } = require('./logger');
+
+// Logger pour le module cache-manager
+const log = createModuleLogger('CACHE-MANAGER');
 
 // Configuration des chemins
-// Utiliser la variable d'environnement ou le chemin par défaut
-const EXCEL_FILE_PATH = process.env.EXCEL_FILE_PATH
-    ? (path.isAbsolute(process.env.EXCEL_FILE_PATH)
-        ? process.env.EXCEL_FILE_PATH
-        : path.join(__dirname, process.env.EXCEL_FILE_PATH))
-    : path.join(__dirname, 'data', 'sap_export.xlsx');
+const EXCEL_FILE_PATH = path.join(__dirname, 'data', 'sap_export.xlsx');
 const CACHE_DIR = path.join(__dirname, 'cache');
 const CACHE_FILE_PATH = path.join(CACHE_DIR, 'data_cache.json');
 
@@ -23,16 +22,20 @@ if (!fs.existsSync(CACHE_DIR)) {
  */
 async function refreshCache() {
     const startTime = Date.now();
+    log.info('Starting cache refresh...');
     console.log('\n🔄 [CACHE] Début de la mise à jour du cache...');
     console.log(`📅 Date/Heure : ${new Date().toLocaleString('fr-FR')}`);
 
     try {
         // Vérifier si le fichier Excel existe
         if (!fs.existsSync(EXCEL_FILE_PATH)) {
-            throw new Error(`Fichier Excel non trouvé : ${EXCEL_FILE_PATH}`);
+            const error = `Excel file not found: ${EXCEL_FILE_PATH}`;
+            log.error(error);
+            throw new Error(error);
         }
 
         // Lire le fichier Excel
+        log.info(`Reading Excel file: ${EXCEL_FILE_PATH}`);
         console.log(`📖 Lecture du fichier Excel : ${EXCEL_FILE_PATH}`);
         const workbook = xlsx.readFile(EXCEL_FILE_PATH);
 
@@ -43,6 +46,8 @@ async function refreshCache() {
             raw: false,
             dateNF: 'yyyy-mm-dd'
         });
+
+        log.info(`Excel file read successfully, total rows: ${jsonData.length}`);
 
         // Filtrer les données (machines 850MS uniquement)
         const filteredData = jsonData.filter(row => {
@@ -56,6 +61,8 @@ async function refreshCache() {
             const machineValue = String(row[machineKey] || '');
             return machineValue.startsWith('850MS');
         });
+
+        log.info(`Filtered 850MS rows: ${filteredData.length}`);
 
         // Préparer les métadonnées du cache
         const cacheData = {
@@ -72,6 +79,11 @@ async function refreshCache() {
 
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
+        log.info(`Cache refresh completed successfully in ${duration}s`, {
+            totalRows: jsonData.length,
+            filteredRows: filteredData.length,
+            cachePath: CACHE_FILE_PATH
+        });
         console.log(`✅ [CACHE] Mise à jour terminée avec succès`);
         console.log(`📊 Total lignes Excel : ${jsonData.length}`);
         console.log(`✅ Lignes 850MS filtrées : ${filteredData.length}`);
@@ -87,6 +99,7 @@ async function refreshCache() {
         };
 
     } catch (error) {
+        log.error('Error during cache refresh', { error: error.message, stack: error.stack });
         console.error('❌ [CACHE] Erreur lors de la mise à jour du cache:', error.message);
         console.error(error.stack);
 
@@ -104,12 +117,14 @@ function readCache() {
     try {
         // Vérifier si le cache existe
         if (!fs.existsSync(CACHE_FILE_PATH)) {
+            log.warn('Cache not found, generating first cache...');
             console.warn('⚠️  [CACHE] Cache non trouvé. Génération du premier cache...');
             // Créer le cache de manière synchrone pour la première fois
             refreshCache();
 
             // Si toujours pas de cache, retourner une erreur
             if (!fs.existsSync(CACHE_FILE_PATH)) {
+                log.error('Cache not found and cannot be generated');
                 return {
                     success: false,
                     error: 'Cache introuvable et impossible à générer',
@@ -119,12 +134,15 @@ function readCache() {
         }
 
         // Lire le fichier JSON (ultra rapide : ~0.05s)
+        log.debug('Reading cache file');
         const cacheContent = fs.readFileSync(CACHE_FILE_PATH, 'utf8');
         const cacheData = JSON.parse(cacheContent);
 
+        log.debug('Cache file read successfully');
         return cacheData;
 
     } catch (error) {
+        log.error('Error reading cache file', { error: error.message });
         console.error('❌ [CACHE] Erreur lors de la lecture du cache:', error);
         return {
             success: false,

@@ -1,14 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 const xlsx = require('xlsx');
+const { createModuleLogger } = require('./logger');
+
+// Logger pour le module ilot-cache-manager
+const log = createModuleLogger('ILOT-CACHE');
 
 // Configuration des chemins
-// Utiliser la variable d'environnement ou le chemin par défaut
-const EXCEL_FILE_PATH = process.env.EXCEL_FILE_PATH
-    ? (path.isAbsolute(process.env.EXCEL_FILE_PATH)
-        ? process.env.EXCEL_FILE_PATH
-        : path.join(__dirname, process.env.EXCEL_FILE_PATH))
-    : path.join(__dirname, 'data', 'sap_export.xlsx');
+const EXCEL_FILE_PATH = path.join(__dirname, 'data', 'sap_export.xlsx');
 const CACHE_DIR = path.join(__dirname, 'cache');
 
 // Liste des îlots
@@ -249,16 +248,20 @@ function calculateIlotStats(ilotData) {
  */
 async function refreshIlotCaches() {
     const startTime = Date.now();
+    log.info('Starting ilot caches refresh...');
     console.log('\n🔄 [ÎLOTS CACHE] Début de la mise à jour des caches îlots...');
     console.log(`📅 Date/Heure : ${new Date().toLocaleString('fr-FR')}`);
 
     try {
         // Vérifier si le fichier Excel existe
         if (!fs.existsSync(EXCEL_FILE_PATH)) {
-            throw new Error(`Fichier Excel non trouvé : ${EXCEL_FILE_PATH}`);
+            const error = `Excel file not found: ${EXCEL_FILE_PATH}`;
+            log.error(error);
+            throw new Error(error);
         }
 
         // Lire le fichier Excel
+        log.info(`Reading Excel file: ${EXCEL_FILE_PATH}`);
         console.log(`📖 Lecture du fichier Excel : ${EXCEL_FILE_PATH}`);
         const workbook = xlsx.readFile(EXCEL_FILE_PATH);
         const sheetName = workbook.SheetNames[0];
@@ -319,11 +322,16 @@ async function refreshIlotCaches() {
                 filePath: cacheFilePath
             };
 
+            log.info(`Cache created for ${ilot}: ${rejectsOnlyData.length} records (rejects only)`);
             console.log(`✅ [${ilot}] Cache créé : ${rejectsOnlyData.length} enregistrements (rebuts seulement)`);
         }
 
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
+        log.info(`Ilot caches refresh completed successfully in ${duration}s`, {
+            ilotsCount: ILOTS.length,
+            cacheDir: CACHE_DIR
+        });
         console.log(`\n✅ [ÎLOTS CACHE] Mise à jour terminée avec succès`);
         console.log(`⏱️  Durée totale : ${duration}s`);
         console.log(`💾 ${ILOTS.length} fichiers cache créés dans : ${CACHE_DIR}`);
@@ -336,6 +344,7 @@ async function refreshIlotCaches() {
         };
 
     } catch (error) {
+        log.error('Error during ilot caches refresh', { error: error.message, stack: error.stack });
         console.error('❌ [ÎLOTS CACHE] Erreur lors de la mise à jour:', error.message);
         console.error(error.stack);
 
@@ -351,9 +360,11 @@ async function refreshIlotCaches() {
  */
 function readIlotCache(ilot) {
     try {
+        log.debug(`Reading cache for ilot: ${ilot}`);
         const cacheFilePath = path.join(CACHE_DIR, `${ilot.toLowerCase()}-data.json`);
 
         if (!fs.existsSync(cacheFilePath)) {
+            log.warn(`Cache not found for ilot: ${ilot}`);
             return {
                 success: false,
                 error: `Cache non trouvé pour l'îlot ${ilot}`,
@@ -364,9 +375,11 @@ function readIlotCache(ilot) {
         const cacheContent = fs.readFileSync(cacheFilePath, 'utf8');
         const cacheData = JSON.parse(cacheContent);
 
+        log.debug(`Cache read successfully for ilot: ${ilot}`);
         return cacheData;
 
     } catch (error) {
+        log.error(`Error reading cache for ilot ${ilot}`, { error: error.message });
         console.error(`❌ [ÎLOTS CACHE] Erreur lecture cache ${ilot}:`, error);
         return {
             success: false,

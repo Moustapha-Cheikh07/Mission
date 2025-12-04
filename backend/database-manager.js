@@ -1,6 +1,10 @@
 const fs = require('fs').promises;
 const path = require('path');
 const documentsManager = require('./documents-manager');
+const { createModuleLogger } = require('./logger');
+
+// Logger pour le module database-manager
+const log = createModuleLogger('DATABASE');
 
 // Chemin du fichier CSV des fiches étoile
 const FICHES_CSV_PATH = path.join(__dirname, 'fiches-etoile.csv');
@@ -60,8 +64,10 @@ const DatabaseManager = {
 
             return fiches;
         } catch (error) {
+            log.error('Error reading CSV file', { error: error.message });
             console.error('Erreur lors de la lecture du CSV:', error);
             if (error.code === 'ENOENT') {
+                log.warn('CSV file not found, creating new one');
                 // Créer le fichier avec l'en-tête si il n'existe pas
                 const header = 'Numero_NNCP;Date_Creation;Reference;Libelle;Quantite;Prix_Unitaire;Prix_Total;Date_Production;Operateur;Probleme;Decision_49MS;Status\n';
                 await fs.writeFile(FICHES_CSV_PATH, header, 'utf8');
@@ -271,6 +277,7 @@ const DatabaseManager = {
     // ========================================
 
     close() {
+        log.info('Database manager closed');
         console.log('✅ Database manager closed');
     }
 };

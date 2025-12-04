@@ -1,3 +1,6 @@
+// Charger les variables d'environnement
+require('dotenv').config({ path: __dirname + '/../.env.production' });
+
 const express = require('express');
 const cors = require('cors');
 const xlsx = require('xlsx');
@@ -5,20 +8,26 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const cron = require('node-cron');
+const { createModuleLogger } = require('./logger');
 const db = require('./database-manager');
 const cacheManager = require('./cache-manager');
 const ilotCacheManager = require('./ilot-cache-manager');
 const productReferences = require('./product-references');
 
+// Logger pour le module serveur
+const log = createModuleLogger('SERVER');
+
 const app = express();
 
 // Configuration multi-environnements
 const ENV = process.env.NODE_ENV || 'development';
+log.info(`Environment: ${ENV}`);
 console.log(`🌍 Environment: ${ENV}`);
 
 // Configuration par défaut selon l'environnement
 const PORT = process.env.PORT || 1880;
 const HOST = process.env.HOST || 'localhost';
+log.info(`Configuration: HOST=${HOST}, PORT=${PORT}`);
 
 // Enable CORS for all requests
 app.use(cors({
