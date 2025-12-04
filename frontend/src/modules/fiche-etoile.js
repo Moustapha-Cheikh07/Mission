@@ -7,8 +7,8 @@ const FicheEtoileModule = {
     editingFicheId: null, // ID de la fiche en cours de modification
     currentFicheId: null, // ID de la fiche pour le menu contextuel
     contextMenuInitialized: false, // Flag pour éviter la réinitialisation multiple
-    API_URL: 'http://localhost:3000/api/fiches-etoile',
-    REFERENCES_URL: 'http://localhost:3000/api/references/850ms',
+    API_URL: window.Config ? window.Config.apiFichesEtoile : 'http://10.192.14.223:1880/api/fiches-etoile',
+    REFERENCES_URL: window.Config ? window.Config.apiReferences : 'http://10.192.14.223:1880/api/references/850ms',
     CACHE_KEY: 'references_850ms_cache',
     CACHE_DURATION: 24 * 60 * 60 * 1000, // 24 heures en millisecondes
 
@@ -168,13 +168,6 @@ const FicheEtoileModule = {
             console.log('✅ Listener quantité attaché');
         }
 
-        // Changement de la décision 49MS - Mettre à jour le statut en temps réel
-        const decision49msCheckbox = document.getElementById('fiche-decision-49ms');
-        if (decision49msCheckbox) {
-            decision49msCheckbox.addEventListener('change', () => this.updateDecisionStatus());
-            console.log('✅ Listener 49MS attaché');
-        }
-
         // Search fiches
         const searchInput = document.getElementById('fiches-search');
         if (searchInput) {
@@ -240,32 +233,6 @@ const FicheEtoileModule = {
         }
     },
 
-    /**
-     * Mettre à jour l'affichage du statut en fonction de la décision 49MS
-     */
-    updateDecisionStatus: function() {
-        const decision49ms = document.getElementById('fiche-decision-49ms').checked;
-        const statusAlert = document.getElementById('decision-status-alert');
-        const statusIcon = document.getElementById('decision-status-icon');
-        const statusText = document.getElementById('decision-status-text');
-        const statusDescription = document.getElementById('decision-status-description');
-
-        if (!statusAlert || !statusIcon || !statusText || !statusDescription) return;
-
-        if (decision49ms) {
-            // Case 49MS cochée → Statut "Vérifié"
-            statusAlert.className = 'alert alert-success mt-3';
-            statusIcon.className = 'bi bi-check-circle-fill';
-            statusText.textContent = 'Vérifié';
-            statusDescription.textContent = 'Cette fiche est validée par 49MS et sera enregistrée comme vérifiée.';
-        } else {
-            // Case 49MS non cochée → Statut "En attente"
-            statusAlert.className = 'alert alert-warning mt-3';
-            statusIcon.className = 'bi bi-hourglass-split';
-            statusText.textContent = 'En attente de décision';
-            statusDescription.textContent = 'Cette fiche sera soumise pour approbation.';
-        }
-    },
 
     /**
      * Afficher la prévisualisation
@@ -281,9 +248,8 @@ const FicheEtoileModule = {
         const operateur = document.getElementById('fiche-operateur').value || 'Non spécifié';
         const problemeSelect = document.getElementById('fiche-probleme');
         const probleme = problemeSelect.value || 'Non spécifié';
-        const decision49ms = document.getElementById('fiche-decision-49ms').checked;
 
-        console.log('📋 Données formulaire:', { reference, libelle, quantite, dateProduction, probleme, decision49ms });
+        console.log('📋 Données formulaire:', { reference, libelle, quantite, dateProduction, probleme });
 
         // Validation des champs obligatoires
         if (!reference || !libelle || !quantite || !dateProduction || !probleme) {
@@ -358,18 +324,12 @@ const FicheEtoileModule = {
 
                     <div class="col-md-6">
                         <div class="card h-100">
-                            <div class="card-header bg-success bg-opacity-10">
-                                <h6 class="mb-0"><i class="bi bi-check-circle me-2"></i>Décision Qualité</h6>
+                            <div class="card-header bg-info bg-opacity-10">
+                                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Statut</h6>
                             </div>
                             <div class="card-body d-flex flex-column justify-content-center">
-                                <div class="text-center mb-3">
-                                    <div class="form-check form-switch d-inline-block" style="font-size: 1.5rem;">
-                                        <input class="form-check-input" type="checkbox" ${decision49ms ? 'checked' : ''} disabled>
-                                        <label class="form-check-label ms-2 fw-bold">49MS</label>
-                                    </div>
-                                </div>
-                                <div class="alert ${decision49ms ? 'alert-success' : 'alert-warning'} mb-0">
-                                    <strong>Statut:</strong> ${decision49ms ? '✅ Vérifié (49MS)' : '⏳ En attente de décision'}
+                                <div class="alert alert-info mb-0">
+                                    <strong>Type:</strong> Déclaration de Non-Conformité Production
                                 </div>
                             </div>
                         </div>
@@ -496,9 +456,8 @@ const FicheEtoileModule = {
         const operateur = document.getElementById('fiche-operateur').value || 'Non spécifié';
         const problemeSelect = document.getElementById('fiche-probleme');
         const probleme = problemeSelect.value || 'Non spécifié';
-        const decision49ms = document.getElementById('fiche-decision-49ms').checked;
 
-        console.log('📝 Données formulaire:', { reference, libelle, quantite, dateProduction, probleme, decision49ms });
+        console.log('📝 Données formulaire:', { reference, libelle, quantite, dateProduction, probleme });
         console.log('📦 currentReference:', this.currentReference);
 
         // Validation
@@ -518,12 +477,6 @@ const FicheEtoileModule = {
             return;
         }
 
-        // Déterminer le statut en fonction de la décision 49MS
-        let status = 'pending'; // Par défaut: en attente
-        if (decision49ms) {
-            status = 'completed'; // Si 49MS coché → Vérifié
-        }
-
         // Préparer les données
         const ficheData = {
             numero_nncp: this.currentNumeroNNCP,
@@ -534,8 +487,7 @@ const FicheEtoileModule = {
             date_production: dateProduction,
             operateur: operateur,
             probleme: probleme,
-            decision_49ms: decision49ms,
-            status: status
+            status: 'pending'
         };
 
         console.log('📤 Envoi de la fiche:', ficheData);
@@ -578,8 +530,7 @@ const FicheEtoileModule = {
                     modal.hide();
                 }
 
-                const statusMessage = decision49ms ? ' (Statut: ✅ Vérifié)' : ' (Statut: ⏳ En attente)';
-                this.showSuccess(`Fiche ${result.numero_nncp || ficheData.numero_nncp} ${action} avec succès!${statusMessage}`);
+                this.showSuccess(`Fiche ${result.numero_nncp || ficheData.numero_nncp} ${action} avec succès!`);
                 this.resetForm();
 
                 if (!isEditing) {
@@ -605,16 +556,6 @@ const FicheEtoileModule = {
         document.getElementById('fiche-libelle').value = '';
         document.getElementById('fiche-prix-total').value = '';
 
-        // Réinitialiser et désactiver la case 49MS
-        const decision49msCheckbox = document.getElementById('fiche-decision-49ms');
-        const decision49msLabel = document.querySelector('label[for="fiche-decision-49ms"]');
-        decision49msCheckbox.checked = false;
-        decision49msCheckbox.disabled = true;
-        decision49msCheckbox.style.cursor = 'not-allowed';
-        decision49msLabel.style.cursor = 'not-allowed';
-        decision49msLabel.classList.add('text-muted');
-        decision49msLabel.innerHTML = '49MS <small>(Admin uniquement)</small>';
-
         this.currentReference = null;
         this.editingFicheId = null; // Réinitialiser le mode édition
         this.hideError();
@@ -626,9 +567,6 @@ const FicheEtoileModule = {
             numericSpan.classList.remove('text-warning');
             numericSpan.classList.add('text-primary');
         }
-
-        // Réinitialiser le statut visuel
-        this.updateDecisionStatus();
     },
 
     /**
@@ -668,9 +606,6 @@ const FicheEtoileModule = {
 
         container.innerHTML = this.fiches.map(fiche => {
             const statusInfo = this.getStatusInfo(fiche.status);
-            const decision49msIcon = fiche.decision_49ms
-                ? '<i class="bi bi-check-circle-fill text-success"></i>'
-                : '<i class="bi bi-x-circle-fill text-danger"></i>';
 
             return `
             <div class="fiche-card-modern" data-fiche-id="${fiche.id}">
@@ -728,12 +663,8 @@ const FicheEtoileModule = {
                 ` : ''}
 
                 <div class="fiche-footer">
-                    <div class="fiche-49ms">
-                        ${decision49msIcon}
-                        <span>${fiche.decision_49ms ? 'Vérifié 49MS' : 'En attente 49MS'}</span>
-                    </div>
                     <span class="fiche-context-hint">
-                        <i class="bi bi-mouse2-fill me-1"></i>Clic droit
+                        <i class="bi bi-mouse2-fill me-1"></i>Clic droit pour actions
                     </span>
                 </div>
             </div>
@@ -780,17 +711,14 @@ const FicheEtoileModule = {
                         </span>
                     </div>
                     <div class="row g-2 small">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <strong>Quantité:</strong> ${fiche.quantite}
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <strong>Prix:</strong> ${fiche.prix_total} €
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <strong>Date:</strong> ${this.formatDate(fiche.date_production)}
-                        </div>
-                        <div class="col-md-3">
-                            <strong>49MS:</strong> ${fiche.decision_49ms ? '✅ Oui' : '❌ Non'}
                         </div>
                     </div>
                 </div>
@@ -980,13 +908,6 @@ const FicheEtoileModule = {
                     contextMenu.style.display = 'none';
                 });
 
-                document.getElementById('context-toggle-49ms').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log('🔄 Toggle 49MS fiche ID:', this.currentFicheId);
-                    this.toggle49MS(this.currentFicheId);
-                    contextMenu.style.display = 'none';
-                });
-
                 document.getElementById('context-delete').addEventListener('click', (e) => {
                     e.preventDefault();
                     console.log('🗑️ Suppression fiche ID:', this.currentFicheId);
@@ -1046,16 +967,16 @@ const FicheEtoileModule = {
 
                 <table class="table table-bordered mt-3">
                     <thead class="table-light">
-                        <tr><th colspan="2" class="text-center">DÉCISION QUALITÉ</th></tr>
+                        <tr><th colspan="2" class="text-center">STATUT</th></tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <th style="width: 30%;">49MS:</th>
-                            <td><strong>${fiche.decision_49ms ? '✓ OUI' : '✗ NON'}</strong></td>
+                            <th style="width: 30%;">Type:</th>
+                            <td><strong>Déclaration de Non-Conformité Production</strong></td>
                         </tr>
                         <tr>
                             <th>Statut:</th>
-                            <td>${fiche.decision_49ms ? 'Approuvé pour 49MS' : 'En attente de décision'}</td>
+                            <td>${this.getStatusLabel(fiche.status)}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1158,104 +1079,15 @@ const FicheEtoileModule = {
             problemeSelect.value = fiche.probleme || '';
         }
 
-        // Activer la case 49MS pour les admins en mode modification
-        const decision49msCheckbox = document.getElementById('fiche-decision-49ms');
-        const decision49msLabel = document.querySelector('label[for="fiche-decision-49ms"]');
-        const isAdmin = typeof SimpleAuth !== 'undefined' && SimpleAuth.isAdmin();
-
-        if (isAdmin) {
-            // Admin en mode modification : activer la case 49MS
-            decision49msCheckbox.disabled = false;
-            decision49msCheckbox.style.cursor = 'pointer';
-            decision49msCheckbox.checked = fiche.decision_49ms;
-            decision49msLabel.style.cursor = 'pointer';
-            decision49msLabel.classList.remove('text-muted');
-            decision49msLabel.innerHTML = '<strong>49MS</strong> <small class="text-success">(Vous pouvez modifier)</small>';
-            console.log('✅ Case 49MS activée pour admin');
-        } else {
-            // Visiteur : afficher l'état mais désactiver
-            decision49msCheckbox.checked = fiche.decision_49ms;
-            decision49msCheckbox.disabled = true;
-            console.log('⚠️ Case 49MS désactivée pour visiteur');
-        }
-
         // Calculer le prix total
         this.calculatePrixTotal();
-
-        // Mettre à jour le statut visuel selon la case 49MS
-        this.updateDecisionStatus();
 
         // Scroll vers le formulaire
         document.getElementById('fiche-etoile-form').scrollIntoView({ behavior: 'smooth' });
 
-        const editMessage = isAdmin
-            ? `📝 Modification de la fiche ${fiche.numero_nncp} - Vous pouvez modifier les champs et cocher/décocher 49MS puis renvoyer`
-            : `📝 Modification de la fiche ${fiche.numero_nncp} - Modifiez les champs puis prévisualisez et envoyez`;
-        this.showSuccess(editMessage);
+        this.showSuccess(`📝 Modification de la fiche ${fiche.numero_nncp} - Modifiez les champs puis prévisualisez et envoyez`);
     },
 
-    /**
-     * Basculer l'état 49MS d'une fiche (Admin seulement)
-     */
-    toggle49MS: async function(ficheId) {
-        const fiche = this.fiches.find(f => f.id === ficheId);
-        if (!fiche) {
-            alert('Fiche introuvable');
-            return;
-        }
-
-        const newDecision49ms = !fiche.decision_49ms;
-        const newStatus = newDecision49ms ? 'completed' : 'pending';
-
-        console.log(`🔄 Toggle 49MS pour fiche ${fiche.numero_nncp}: ${fiche.decision_49ms} → ${newDecision49ms}`);
-
-        // Formater la date correctement (YYYY-MM-DD)
-        let dateFormatted = fiche.date_production;
-        if (dateFormatted && dateFormatted.includes('T')) {
-            // Si c'est un timestamp ISO (2025-01-12T00:00:00.000Z), extraire juste la date
-            dateFormatted = dateFormatted.split('T')[0];
-        } else if (dateFormatted && dateFormatted.includes('/')) {
-            // Si c'est au format DD/MM/YYYY, convertir en YYYY-MM-DD
-            const parts = dateFormatted.split('/');
-            if (parts.length === 3) {
-                dateFormatted = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-            }
-        }
-
-        try {
-            const response = await fetch(`${this.API_URL}/${ficheId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    numero_nncp: fiche.numero_nncp,
-                    reference: fiche.reference,
-                    libelle: fiche.libelle,
-                    quantite: fiche.quantite,
-                    prix_unitaire: fiche.prix_unitaire,
-                    date_production: dateFormatted,
-                    operateur: fiche.operateur,
-                    probleme: fiche.probleme,
-                    decision_49ms: newDecision49ms,
-                    status: newStatus
-                })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                const statusLabel = newDecision49ms ? '✅ Vérifié' : '⏳ En attente';
-                this.showSuccess(`49MS ${newDecision49ms ? 'coché' : 'décoché'} pour la fiche ${fiche.numero_nncp} (Statut: ${statusLabel})`);
-                this.loadFichesFromServer(); // Rafraîchir la liste
-            } else {
-                this.showError('Erreur lors de la mise à jour: ' + result.error);
-            }
-        } catch (error) {
-            console.error('❌ Erreur réseau:', error);
-            this.showError('Erreur de connexion au serveur');
-        }
-    },
 
     /**
      * Supprimer une fiche (Admin seulement)

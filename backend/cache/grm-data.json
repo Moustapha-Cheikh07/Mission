@@ -2,8 +2,8 @@
   "ilot": "GRM",
   "success": true,
   "count": 2174,
-  "cacheCreatedAt": "2025-12-02T10:05:39.539Z",
-  "lastUpdate": "02/12/2025 11:05:39",
+  "cacheCreatedAt": "2025-12-04T08:38:01.205Z",
+  "lastUpdate": "04/12/2025 09:38:01",
   "stats": {
     "summary": {
       "totalRejectCost": "123680.17",
@@ -11,6 +11,18 @@
       "totalProduction": "98249120",
       "totalRevenue": "9466655.97",
       "rejectRate": "1.22"
+    },
+    "yesterday": {
+      "rejectQuantity": "0",
+      "rejectCost": "0.00",
+      "producedQuantity": "0",
+      "producedValue": "0.00"
+    },
+    "month": {
+      "rejectQuantity": "0",
+      "rejectCost": "0.00",
+      "producedQuantity": "0",
+      "producedValue": "0.00"
     },
     "machineStats": [
       {

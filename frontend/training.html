@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="assets/css/components.css">
     <link rel="stylesheet" href="assets/css/bootstrap-custom.css">
     <link rel="stylesheet" href="assets/css/enhancements.css">
+    <link rel="stylesheet" href="assets/css/fiche-cards.css">
 </head>
 
 <body class="bg-light">
@@ -148,14 +149,14 @@
 
     <!-- Quality Document Viewer Modal -->
     <div class="modal fade" id="quality-document-viewer-modal" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 95vw; width: 95vw; height: 95vh; margin: 2.5vh auto;">
+            <div class="modal-content" style="height: 100%;">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title" id="quality-viewer-doc-title">Document Qualité</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         id="quality-close-viewer"></button>
                 </div>
-                <div class="modal-body p-0" id="quality-viewer-body" style="min-height: 500px;"></div>
+                <div class="modal-body p-0" id="quality-viewer-body" style="height: calc(100% - 120px); overflow: auto;"></div>
                 <div class="modal-footer">
                     <button class="btn btn-success" id="quality-viewer-download-btn"><i
                             class="bi bi-download me-1"></i>Télécharger</button>
@@ -237,6 +238,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
+    <!-- Configuration multi-environnements (dev/prod) -->
+    <script src="src/config.js"></script>
+
     <script src="src/core/auth.js"></script>
     <script src="src/core/data-manager.js"></script>
     <script src="src/core/utils.js"></script>
@@ -247,8 +251,7 @@
     <script src="src/modules/results.js"></script>
     <script src="src/modules/documents.js"></script>
     <script src="src/modules/activity.js"></script>
-    <script src="src/modules/forms.js"></script>
-    <script src="src/modules/training.js"></script>
+    <script src="src/modules/training.js?v=2"></script>
     <script src="src/modules/data-connector.js"></script>
     <script src="src/modules/server-sync.js"></script>
     <script src="src/modules/date-input-hybrid.js"></script>

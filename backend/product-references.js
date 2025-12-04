@@ -3,7 +3,12 @@ const path = require('path');
 const fs = require('fs');
 
 // Configuration des chemins
-const EXCEL_FILE_PATH = path.join(__dirname, 'data', 'sap_export.xlsx');
+// Utiliser la variable d'environnement ou le chemin par défaut
+const EXCEL_FILE_PATH = process.env.EXCEL_FILE_PATH
+    ? (path.isAbsolute(process.env.EXCEL_FILE_PATH)
+        ? process.env.EXCEL_FILE_PATH
+        : path.join(__dirname, process.env.EXCEL_FILE_PATH))
+    : path.join(__dirname, 'data', 'sap_export.xlsx');
 
 // Cache en mémoire pour les références 850MS
 let referencesCache = null;

@@ -2,7 +2,7 @@
 const DataConnectorModule = {
     // Configuration
     config: {
-        apiEndpoint: 'http://localhost:3000/api/data',
+        apiEndpoint: window.Config ? window.Config.apiData : 'http://10.192.14.223:1880/api/data',
         autoRefresh: true,
         refreshInterval: 300000 // 5 minutes
     },

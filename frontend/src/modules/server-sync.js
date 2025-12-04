@@ -1,6 +1,6 @@
 // Server Sync Module - Synchronize documents and forms with server database
 const ServerSync = {
-    baseURL: 'http://localhost:3000',
+    baseURL: window.Config ? window.Config.apiBaseURL : 'http://10.192.14.223:1880',
 
     // ====================================
     // QUALITY DOCUMENTS

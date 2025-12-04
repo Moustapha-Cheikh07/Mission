@@ -14,7 +14,12 @@ document.addEventListener('DOMContentLoaded', function () {
     ActivityModule.init(); // Initialize recent activities
     ResultsModule.init();
     DocumentsModule.init();
-    FormsModule.init();
+
+    // Initialize Forms module if available
+    if (typeof FormsModule !== 'undefined') {
+        FormsModule.init();
+    }
+
     TrainingDocumentsModule.init(); // Initialize training documents system
     RejectAnalysis.init(); // Initialize reject analysis system
     ChartModule.init();

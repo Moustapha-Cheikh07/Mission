@@ -329,7 +329,10 @@
     <!-- JavaScript -->
     <script>
         const ILOT_NAME = 'BZ2';
-        const API_URL = '/api/ilot/' + ILOT_NAME;
+        // Détection automatique de l'environnement
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const BASE_URL = isLocalhost ? 'http://localhost:1880' : 'http://10.192.14.223:1880';
+        const API_URL = BASE_URL + '/api/ilot/' + ILOT_NAME;
 
         // Format number with spaces
         function formatNumber(num) {

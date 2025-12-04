@@ -2,8 +2,8 @@
   "ilot": "PM2",
   "success": true,
   "count": 1897,
-  "cacheCreatedAt": "2025-12-02T10:05:39.381Z",
-  "lastUpdate": "02/12/2025 11:05:39",
+  "cacheCreatedAt": "2025-12-04T08:38:01.024Z",
+  "lastUpdate": "04/12/2025 09:38:01",
   "stats": {
     "summary": {
       "totalRejectCost": "334583.03",
@@ -11,6 +11,18 @@
       "totalProduction": "30399803",
       "totalRevenue": "37205477.76",
       "rejectRate": "1.59"
+    },
+    "yesterday": {
+      "rejectQuantity": "0",
+      "rejectCost": "0.00",
+      "producedQuantity": "0",
+      "producedValue": "0.00"
+    },
+    "month": {
+      "rejectQuantity": "0",
+      "rejectCost": "0.00",
+      "producedQuantity": "0",
+      "producedValue": "0.00"
     },
     "machineStats": [
       {

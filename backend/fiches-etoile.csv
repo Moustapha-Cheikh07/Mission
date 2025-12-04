@@ -1,0 +1,8 @@
+Numero_NNCP;Date_Creation;Reference;Libelle;Quantite;Prix_Unitaire;Prix_Total;Date_Production;Operateur;Probleme;Decision_49MS;Status
+NNCP-2025-001;2025-12-03;850MS123456;Disjoncteur tripolaire 25A;10;12.455;124.55;2025-12-02;Jean Dupont;Défaut d'assemblage - vis desserrées;OUI;completed
+NNCP-2025-002;2025-12-03;850MS789012;Contacteur 4 pôles 40A;5;25.3;126.5;2025-12-03;Marie Martin;Pièce endommagée lors de l'emballage;OUI;completed
+NNCP-2025-003;2025-12-03;850MS345678;Relais thermique 16-25A;15;8.75;131.25;2025-12-03;Pierre Durand;Étiquetage incorrect;OUI;completed
+NNCP-2025-004;2025-12-03;850MS901234;Interrupteur sectionneur 63A;3;45.5;136.5;2025-12-02;Sophie Leblanc;Défaut de peinture;OUI;completed
+NNCP-2025-005;2025-12-03;03377046EA;S/E THERMIQUE TSN 10A;500;0.19104;95.52;2025-12-03;Moustapha;Chargement contact mobile;NON;pending
+NNCP-2025-006;2025-12-03;BBV50824-EMB;25A MULTIPOLAR MECANO THERMAL S/A IC60;960;0.175;168;2025-12-03;Antonin;Pastille dégradée;NON;pending
+NNCP-2025-007;2025-12-03;NNZ93258;S/A HEATING 1A;1000;0.15412;154.12;2025-12-03;Clara;Absence pastille;NON;pending

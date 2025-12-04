@@ -5,16 +5,26 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const cron = require('node-cron');
-const db = require('./database-mysql');
+const db = require('./database-manager');
 const cacheManager = require('./cache-manager');
 const ilotCacheManager = require('./ilot-cache-manager');
 const productReferences = require('./product-references');
 
 const app = express();
-const PORT = 3000;
+
+// Configuration multi-environnements
+const ENV = process.env.NODE_ENV || 'development';
+console.log(`🌍 Environment: ${ENV}`);
+
+// Configuration par défaut selon l'environnement
+const PORT = process.env.PORT || 1880;
+const HOST = process.env.HOST || 'localhost';
 
 // Enable CORS for all requests
-app.use(cors());
+app.use(cors({
+    origin: '*', // En production, remplacer par l'URL spécifique du frontend
+    credentials: true
+}));
 
 // Parse JSON bodies
 app.use(express.json());
@@ -22,13 +32,13 @@ app.use(express.json());
 // ========================================
 // SYSTÈME DE CACHE AUTOMATIQUE
 // ========================================
-// Le fichier Excel est lu UNE fois par jour à 3h00 du matin
+// Le fichier Excel est lu UNE fois par jour à 8h00 du matin
 // et converti en JSON pour des performances ultra-rapides
 // Lecture Excel: ~55s → Lecture JSON: ~0.05s (1000x plus rapide)
 
-// Tâche planifiée : tous les jours à 3h00 du matin (cache principal)
-cron.schedule('0 3 * * *', async () => {
-    console.log('\n⏰ [CRON] Tâche planifiée déclenchée : 03h00');
+// Tâche planifiée : tous les jours à 8h00 du matin (cache principal)
+cron.schedule('0 8 * * *', async () => {
+    console.log('\n⏰ [CRON] Tâche planifiée déclenchée : 08h00');
     await cacheManager.refreshCache();
 }, {
     timezone: "Europe/Paris"
@@ -592,6 +602,9 @@ app.get('/health', (req, res) => {
 // SERVE STATIC FILES
 // ========================================
 
+// Servir les fichiers uploadés (documents, training)
+app.use('/assets', express.static(path.join(__dirname, '../assets')));
+
 // Servir les fichiers statiques (le site web)
 app.use(express.static(path.join(__dirname, '../frontend')));
 
@@ -610,8 +623,13 @@ async function startServer() {
     }
 
     // Start the server
-    app.listen(PORT, () => {
-        console.log(`🚀 Server running on http://localhost:${PORT}`);
+    app.listen(PORT, HOST, () => {
+        console.log(`\n${'='.repeat(60)}`);
+        console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+        console.log(`📡 Accessible depuis le réseau local`);
+        console.log(`🌐 URL Frontend: http://${HOST}:${PORT}`);
+        console.log(`📊 API Endpoint: http://${HOST}:${PORT}/api`);
+        console.log(`${'='.repeat(60)}\n`);
     });
 }
 

@@ -1187,10 +1187,30 @@
     justify-content: center !important;
 }
 
-#viewer-body iframe {
+#viewer-body iframe,
+#quality-viewer-body iframe,
+#training-viewer-body iframe {
     width: 100% !important;
     height: 100% !important;
     border: none !important;
+    min-height: 80vh;
+}
+
+/* Hide PDF sidebar/thumbnails */
+#quality-viewer-body iframe,
+#training-viewer-body iframe {
+    position: relative;
+}
+
+/* Style for PDF container to ensure full width */
+#quality-viewer-body,
+#training-viewer-body {
+    background: #525659;
+}
+
+#quality-viewer-body .loading,
+#training-viewer-body .loading {
+    background: white;
 }
 
 .viewer-body .loading {
@@ -2478,4 +2498,95 @@
         transform: translateX(400%);
         background-position: 0% 50%;
     }
+}
+
+
+/* ============================================
+   MACHINE CARDS - Modern design for machines
+   ============================================ */
+.machine-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    border: 2px solid transparent;
+}
+
+.machine-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+    border-color: #10b981;
+}
+
+.machine-card.active {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.machine-card-header {
+    padding: 1.5rem;
+    display: flex;
+    justify-content: center;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.machine-card.active .machine-card-header {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.machine-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.8rem;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.machine-card.active .machine-icon {
+    background: white;
+    color: #10b981;
+}
+
+.machine-card-body {
+    padding: 1rem 1.5rem 1.5rem;
+    text-align: center;
+}
+
+.machine-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.75rem;
+}
+
+.machine-card.active .machine-name {
+    color: white;
+}
+
+.machine-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    background: #f9fafb;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+}
+
+.machine-card.active .machine-stats {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.machine-stats i {
+    font-size: 1rem;
 }

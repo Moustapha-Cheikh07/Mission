@@ -1,12 +1,43 @@
 const TrainingDocumentsModule = {
+    API_URL: window.Config ? window.Config.apiDocumentsTraining : 'http://10.192.14.223:1880/api/documents/training',
+    documents: [],
+    initialized: false,
+
     init: function() {
+        console.log('📚 Initialisation du module Formation...');
+        console.log('📚 SimpleAuth disponible?', typeof SimpleAuth !== 'undefined');
+        console.log('📚 isLoggedIn?', typeof SimpleAuth !== 'undefined' ? SimpleAuth.isLoggedIn() : 'N/A');
+        console.log('📚 getUserRole?', typeof SimpleAuth !== 'undefined' ? SimpleAuth.getUserRole() : 'N/A');
+
+        // Check if we're on the training page
+        const headerActions = document.getElementById('training-header-actions');
+        if (!headerActions) {
+            console.log('⚠️ [Training] Pas sur la page training.html, skip init');
+            return;
+        }
+
+        this.initialized = true;
         this.setupUploadButton();
         this.setupUploadForm();
-        this.displayDocuments();
-        this.updateUIBasedOnAuth();
+        this.loadDocumentsFromServer();
+
+        // Force update after delays to ensure auth is fully loaded
+        setTimeout(() => {
+            console.log('⏰ [Training] Force update après 100ms');
+            console.log('⏰ isLoggedIn après délai?', SimpleAuth.isLoggedIn());
+            this.setupUploadButton();
+        }, 100);
+
+        setTimeout(() => {
+            console.log('⏰⏰ [Training] Second force update après 500ms');
+            console.log('⏰⏰ isLoggedIn après délai?', SimpleAuth.isLoggedIn());
+            this.setupUploadButton();
+        }, 500);
 
         // Listen for auth state changes
         window.addEventListener('authStateChanged', () => {
+            console.log('🔄 Auth state changed, updating UI...');
+            console.log('🔄 isLoggedIn après changement?', SimpleAuth.isLoggedIn());
             this.updateUIBasedOnAuth();
         });
     },
@@ -16,28 +47,44 @@ const TrainingDocumentsModule = {
         const headerActions = document.getElementById('training-header-actions');
         console.log('🔍 [Training] setupUploadButton appelé');
         console.log('  - headerActions existe?', !!headerActions);
-        console.log('  - SimpleAuth.isLoggedIn():', SimpleAuth.isLoggedIn());
+        console.log('  - SimpleAuth défini?', typeof SimpleAuth !== 'undefined');
+
+        if (typeof SimpleAuth !== 'undefined') {
+            console.log('  - SimpleAuth.isLoggedIn():', SimpleAuth.isLoggedIn());
+            console.log('  - localStorage mg_logged_in:', localStorage.getItem('mg_logged_in'));
+            console.log('  - localStorage mg_session_id:', localStorage.getItem('mg_session_id'));
+            console.log('  - localStorage mg_username:', localStorage.getItem('mg_username'));
+        }
 
         if (!headerActions) {
             console.warn('❌ [Training] Element training-header-actions non trouvé');
             return;
         }
 
-        if (SimpleAuth.isLoggedIn()) {
+        // Tous les utilisateurs connectés peuvent ajouter des documents
+        if (typeof SimpleAuth !== 'undefined' && SimpleAuth.isLoggedIn()) {
             console.log('✅ [Training] Utilisateur connecté, ajout du bouton');
+            console.log('✅ headerActions.innerHTML AVANT:', headerActions.innerHTML);
+
             headerActions.innerHTML = `
-                <button class="add-doc-btn" id="show-upload-btn">
-                    <i class="fas fa-plus"></i>
+                <button class="btn btn-info text-white" id="show-upload-btn">
+                    <i class="bi bi-plus-circle me-1"></i>
                     Ajouter un document
                 </button>
             `;
 
+            console.log('✅ headerActions.innerHTML APRÈS:', headerActions.innerHTML);
+
             const showUploadBtn = document.getElementById('show-upload-btn');
+            console.log('✅ Bouton trouvé?', !!showUploadBtn);
+
             if (showUploadBtn) {
                 showUploadBtn.addEventListener('click', () => this.showUploadForm());
+                console.log('✅ Event listener ajouté au bouton');
             }
         } else {
             console.log('❌ [Training] Utilisateur non connecté, pas de bouton');
+            console.log('❌ Raison: SimpleAuth défini?', typeof SimpleAuth !== 'undefined', '| isLoggedIn?', typeof SimpleAuth !== 'undefined' ? SimpleAuth.isLoggedIn() : 'N/A');
             headerActions.innerHTML = '';
         }
     },
@@ -70,9 +117,9 @@ const TrainingDocumentsModule = {
             fileInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    fileName.textContent = file.name;
+                    fileName.textContent = `✅ ${file.name}`;
                 } else {
-                    fileName.textContent = 'Aucun fichier sélectionné';
+                    fileName.textContent = '';
                 }
             });
         }
@@ -81,7 +128,7 @@ const TrainingDocumentsModule = {
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => {
                 if (uploadForm) uploadForm.reset();
-                if (fileName) fileName.textContent = 'Aucun fichier sélectionné';
+                if (fileName) fileName.textContent = '';
                 this.hideUploadForm();
             });
         }
@@ -102,40 +149,23 @@ const TrainingDocumentsModule = {
         const file = fileInput.files[0];
 
         if (!file) {
-            UIModule.showToast('Veuillez sélectionner un fichier', 'error');
-            return;
-        }
-
-        // Validate file size (10MB max for images/videos, 5MB for documents)
-        const maxSize = file.type.startsWith('image/') || file.type.startsWith('video/')
-            ? 10 * 1024 * 1024 // 10MB for media
-            : 5 * 1024 * 1024;  // 5MB for documents
-
-        if (file.size > maxSize) {
-            const maxSizeMB = maxSize / (1024 * 1024);
-            UIModule.showToast(`Le fichier est trop volumineux (max ${maxSizeMB}MB)`, 'error');
+            this.showToast('Veuillez sélectionner un fichier', 'error');
             return;
         }
 
         // Validate file type
-        const allowedTypes = [
-            'application/pdf',
-            'application/vnd.ms-powerpoint',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'image/jpeg',
-            'image/jpg',
-            'image/png',
-            'image/gif',
-            'image/webp',
-            'video/mp4',
-            'video/webm',
-            'video/ogg'
-        ];
+        const allowedExtensions = ['.pdf', '.ppt', '.pptx'];
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
 
-        if (!allowedTypes.includes(file.type)) {
-            UIModule.showToast('Format de fichier non supporté. Utilisez PDF, PPT, PPTX, DOC, DOCX, images (JPG, PNG, GIF, WEBP) ou vidéos (MP4, WEBM, OGG)', 'error');
+        if (!allowedExtensions.includes(fileExtension)) {
+            this.showToast('Format de fichier non supporté. Utilisez PDF, PPT ou PPTX uniquement', 'error');
+            return;
+        }
+
+        // Validate file size (50MB max)
+        const maxSize = 50 * 1024 * 1024; // 50MB
+        if (file.size > maxSize) {
+            this.showToast('Le fichier est trop volumineux (max 50MB)', 'error');
             return;
         }
 
@@ -143,57 +173,38 @@ const TrainingDocumentsModule = {
         const submitBtn = form.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Upload en cours...';
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split spinner-border spinner-border-sm me-1"></i> Upload en cours...';
 
         try {
-            // Read file as base64
-            const base64 = await this.readFileAsBase64(file);
+            // Create FormData
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('title', document.getElementById('doc-title').value);
+            formData.append('category', document.getElementById('doc-category').value);
+            formData.append('description', document.getElementById('doc-description').value || '');
+            formData.append('uploaded_by', SimpleAuth.getCurrentUser() || 'Admin');
+            formData.append('uploadType', 'training'); // Pour multer
 
-            // Get form data
-            const docData = {
-                title: document.getElementById('doc-title').value,
-                category: document.getElementById('doc-category').value,
-                description: document.getElementById('doc-description').value || '',
-                fileName: file.name,
-                fileType: file.type,
-                fileSize: file.size,
-                fileData: base64
-            };
+            // Send to server
+            const response = await fetch(this.API_URL, {
+                method: 'POST',
+                body: formData
+            });
 
-            // Save to storage
-            const saved = DataManager.addTrainingDocument(docData);
+            const result = await response.json();
 
-            if (saved) {
-                // Add activity
-                const categoryNames = {
-                    'basics': 'Concepts de base',
-                    'controls': 'Contrôles qualité',
-                    'procedures': 'Procédures',
-                    'standards': 'Normes et standards',
-                    'tools': 'Outils et équipements',
-                    'other': 'Autre'
-                };
-
-                ActivityModule.addActivity({
-                    type: 'training_upload',
-                    title: 'Document de formation ajouté',
-                    description: `${docData.title} - ${categoryNames[docData.category]}`,
-                    icon: 'file-upload',
-                    user: SimpleAuth.getCurrentUser()
-                });
-
-                // Success
-                UIModule.showToast('Document uploadé avec succès !', 'success');
+            if (result.success) {
+                this.showToast('Document uploadé avec succès !', 'success');
                 form.reset();
-                document.getElementById('file-name').textContent = 'Aucun fichier sélectionné';
+                document.getElementById('file-name').textContent = '';
                 this.hideUploadForm();
-                this.displayDocuments();
+                this.loadDocumentsFromServer();
             } else {
-                UIModule.showToast('Erreur lors de l\'enregistrement. Espace de stockage insuffisant.', 'error');
+                this.showToast('Erreur: ' + (result.error || 'Upload échoué'), 'error');
             }
         } catch (error) {
             console.error('Upload error:', error);
-            UIModule.showToast('Erreur lors de l\'upload du fichier', 'error');
+            this.showToast('Erreur lors de l\'upload du fichier', 'error');
         } finally {
             // Reset button
             submitBtn.disabled = false;
@@ -201,14 +212,26 @@ const TrainingDocumentsModule = {
         }
     },
 
-    // Read file as base64
-    readFileAsBase64: function(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
+    // Load documents from server
+    loadDocumentsFromServer: async function() {
+        try {
+            const response = await fetch(this.API_URL);
+            const result = await response.json();
+
+            if (result.success) {
+                this.documents = result.data || [];
+                console.log(`✅ ${this.documents.length} documents de formation chargés`);
+                this.displayDocuments();
+            } else {
+                console.error('❌ Erreur lors du chargement des documents:', result.error);
+                this.documents = [];
+                this.displayDocuments();
+            }
+        } catch (error) {
+            console.error('❌ Erreur réseau:', error);
+            this.documents = [];
+            this.displayDocuments();
+        }
     },
 
     // Display training documents
@@ -216,106 +239,184 @@ const TrainingDocumentsModule = {
         const documentsList = document.getElementById('training-documents-list');
         if (!documentsList) return;
 
-        const documents = DataManager.getTrainingDocuments();
+        const isAdmin = typeof SimpleAuth !== 'undefined' && SimpleAuth.isAdmin();
+        const isLoggedIn = typeof SimpleAuth !== 'undefined' && SimpleAuth.isLoggedIn();
 
-        if (documents.length === 0) {
+        if (this.documents.length === 0) {
             documentsList.innerHTML = `
-                <div class="empty-docs">
-                    <i class="fas fa-folder-open"></i>
-                    <p>Aucun document de formation disponible pour le moment</p>
-                    ${SimpleAuth.isLoggedIn() ? '<p><small>Utilisez le bouton ci-dessus pour ajouter des documents</small></p>' : ''}
+                <div class="text-center py-5">
+                    <i class="bi bi-folder2-open" style="font-size: 4rem; color: #dee2e6;"></i>
+                    <p class="text-muted mt-3">Aucun document de formation disponible</p>
+                    ${isLoggedIn ? '<p class="small text-muted">Utilisez le bouton ci-dessus pour ajouter des documents</p>' : ''}
                 </div>
             `;
             return;
         }
 
+        // Group documents by category
+        const categories = {
+            'basics': { name: 'Concepts de base', docs: [], icon: 'bi-book' },
+            'controls': { name: 'Contrôles qualité', docs: [], icon: 'bi-clipboard-check' },
+            'procedures': { name: 'Procédures', docs: [], icon: 'bi-list-check' },
+            'standards': { name: 'Normes', docs: [], icon: 'bi-award' },
+            'tools': { name: 'Outils', docs: [], icon: 'bi-tools' },
+            'other': { name: 'Autre', docs: [], icon: 'bi-file-earmark' }
+        };
+
+        this.documents.forEach(doc => {
+            const category = doc.category || 'other';
+            if (categories[category]) {
+                categories[category].docs.push(doc);
+            } else {
+                categories['other'].docs.push(doc);
+            }
+        });
+
         documentsList.innerHTML = '';
 
-        documents.forEach(doc => {
-            const docItem = document.createElement('div');
-            docItem.className = 'training-doc-item';
+        // Display each category
+        Object.keys(categories).forEach(catKey => {
+            const cat = categories[catKey];
+            if (cat.docs.length === 0) return;
 
-            // Get file extension and type
-            const ext = doc.fileName.split('.').pop().toLowerCase();
-            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
-            const isVideo = ['mp4', 'webm', 'ogg'].includes(ext);
-            const isPDF = ext === 'pdf';
-            const isPPT = ['ppt', 'pptx'].includes(ext);
-            const isDoc = ['doc', 'docx'].includes(ext);
-
-            // Get icon class
-            let iconClass = 'fa-file';
-            if (isImage) iconClass = 'fa-file-image';
-            else if (isVideo) iconClass = 'fa-file-video';
-            else if (isPDF) iconClass = 'fa-file-pdf';
-            else if (isPPT) iconClass = 'fa-file-powerpoint';
-            else if (isDoc) iconClass = 'fa-file-word';
-
-            // Category names
-            const categoryNames = {
-                'basics': 'Concepts de base',
-                'controls': 'Contrôles qualité',
-                'procedures': 'Procédures',
-                'standards': 'Normes et standards',
-                'tools': 'Outils et équipements',
-                'other': 'Autre'
-            };
-
-            // Format file size
-            const fileSize = this.formatFileSize(doc.fileSize);
-
-            // Format upload date
-            const uploadDate = Utils.formatDate(doc.uploadDate);
-
-            // Build actions based on authentication
-            let actionsHTML = `
-                <button class="doc-btn view" onclick="TrainingDocumentsModule.viewDocument(${doc.id})">
-                    <i class="fas fa-eye"></i> Consulter
-                </button>
-                <button class="doc-btn download" onclick="TrainingDocumentsModule.downloadDocument(${doc.id})">
-                    <i class="fas fa-download"></i> Télécharger
-                </button>
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'mb-4';
+            categoryDiv.innerHTML = `
+                <h6 class="text-info mb-3">
+                    <i class="${cat.icon} me-2"></i>${cat.name} (${cat.docs.length})
+                </h6>
+                <div id="category-${catKey}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 1.5rem; padding: 1rem 0;"></div>
             `;
+            documentsList.appendChild(categoryDiv);
 
-            if (SimpleAuth.isLoggedIn()) {
-                actionsHTML += `
-                    <button class="doc-btn delete" onclick="TrainingDocumentsModule.deleteDocument(${doc.id})">
-                        <i class="fas fa-trash"></i> Supprimer
-                    </button>
-                `;
-            }
+            const categoryContainer = categoryDiv.querySelector(`#category-${catKey}`);
 
-            docItem.innerHTML = `
-                <div class="doc-icon ${ext}">
-                    <i class="fas ${iconClass}"></i>
-                </div>
-                <div class="doc-info">
-                    <h3>${doc.title}</h3>
-                    ${doc.description ? `<p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">${doc.description}</p>` : ''}
-                    <span class="doc-category">${categoryNames[doc.category] || doc.category}</span>
-                    <div class="doc-meta">
-                        <span><i class="fas fa-file"></i> ${fileSize}</span>
-                        <span><i class="fas fa-calendar"></i> ${uploadDate}</span>
-                        <span><i class="fas fa-user"></i> ${doc.uploadedBy}</span>
-                        <span><i class="fas fa-download"></i> ${doc.downloads || 0} téléchargement(s)</span>
-                    </div>
-                </div>
-                <div class="doc-actions">
-                    ${actionsHTML}
-                </div>
-            `;
-
-            documentsList.appendChild(docItem);
+            cat.docs.forEach(doc => {
+                const docCard = this.createDocumentCard(doc, isAdmin);
+                categoryContainer.appendChild(docCard);
+            });
         });
     },
 
-    // View document in modal
-    viewDocument: function(docId) {
-        const documents = DataManager.getTrainingDocuments();
-        const doc = documents.find(d => d.id === docId);
+    // Create document card
+    createDocumentCard: function(doc, isAdmin) {
+        const col = document.createElement('div');
 
+        // Get file extension and icon
+        const ext = doc.filename.split('.').pop().toLowerCase();
+        const isPDF = ext === 'pdf';
+        const isPPT = ['ppt', 'pptx'].includes(ext);
+        const isDoc = ['doc', 'docx'].includes(ext);
+        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+        const isVideo = ['mp4', 'webm', 'ogg'].includes(ext);
+
+        // Get icon and badge style
+        let iconClass = 'bi-file-earmark';
+        let badgeColor = '#667eea';
+        if (isPDF) {
+            iconClass = 'bi-file-earmark-pdf';
+            badgeColor = '#ef4444';
+        } else if (isPPT) {
+            iconClass = 'bi-file-earmark-slides';
+            badgeColor = '#f59e0b';
+        } else if (isDoc) {
+            iconClass = 'bi-file-earmark-word';
+            badgeColor = '#3b82f6';
+        } else if (isImage) {
+            iconClass = 'bi-file-earmark-image';
+            badgeColor = '#10b981';
+        } else if (isVideo) {
+            iconClass = 'bi-camera-video';
+            badgeColor = '#8b5cf6';
+        }
+
+        // Format date
+        const uploadDate = doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString('fr-FR') : 'N/A';
+
+        // Escape doc.id for safe use in onclick (it's a string with special chars)
+        const escapedId = doc.id.replace(/'/g, "\\'");
+
+        // Category names
+        const categoryNames = {
+            'basics': 'Concepts de base',
+            'controls': 'Contrôles qualité',
+            'procedures': 'Procédures',
+            'standards': 'Normes',
+            'tools': 'Outils',
+            'other': 'Autre'
+        };
+
+        col.innerHTML = `
+            <div class="fiche-card-modern">
+                <div class="fiche-card-header">
+                    <div class="fiche-numero-ref">
+                        <span class="fiche-numero" style="background: ${badgeColor};">
+                            <i class="bi ${iconClass} me-1"></i>${ext.toUpperCase()}
+                        </span>
+                        <h6 class="fiche-reference">${doc.title}</h6>
+                    </div>
+                </div>
+
+                ${doc.description ? `<p class="fiche-libelle">${doc.description}</p>` : ''}
+
+                <div class="fiche-info-grid">
+                    <div class="fiche-info-item">
+                        <i class="bi bi-tag info-icon"></i>
+                        <div>
+                            <span class="info-label">Catégorie</span>
+                            <span class="info-value">${categoryNames[doc.category] || 'Autre'}</span>
+                        </div>
+                    </div>
+
+                    <div class="fiche-info-item">
+                        <i class="bi bi-file-earmark-text info-icon"></i>
+                        <div>
+                            <span class="info-label">Type</span>
+                            <span class="info-value">${ext.toUpperCase()}</span>
+                        </div>
+                    </div>
+
+                    <div class="fiche-info-item">
+                        <i class="bi bi-calendar-event info-icon"></i>
+                        <div>
+                            <span class="info-label">Date ajout</span>
+                            <span class="info-value">${uploadDate}</span>
+                        </div>
+                    </div>
+
+                    <div class="fiche-info-item">
+                        <i class="bi bi-person-badge info-icon"></i>
+                        <div>
+                            <span class="info-label">Ajouté par</span>
+                            <span class="info-value">${doc.uploaded_by || 'Admin'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fiche-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-sm btn-outline-primary" onclick="TrainingDocumentsModule.viewDocument('${escapedId}')" style="flex: 1; white-space: nowrap;">
+                        <i class="bi bi-eye me-1"></i>Consulter
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="TrainingDocumentsModule.downloadDocument('${escapedId}')" style="flex: 1; white-space: nowrap;">
+                        <i class="bi bi-download me-1"></i>Télécharger
+                    </button>
+                    ${isAdmin ? `
+                    <button class="btn btn-sm btn-outline-danger" onclick="TrainingDocumentsModule.deleteDocument('${escapedId}')" style="white-space: nowrap;">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+
+        return col;
+    },
+
+    // View document
+    viewDocument: function(docId) {
+        const doc = this.documents.find(d => d.id === docId);
         if (!doc) {
-            UIModule.showToast('Document non trouvé', 'error');
+            this.showToast('Document non trouvé', 'error');
             return;
         }
 
@@ -326,204 +427,123 @@ const TrainingDocumentsModule = {
 
         if (!modal || !titleElement || !bodyElement) return;
 
-        // Get file extension
-        const ext = doc.fileName.split('.').pop().toLowerCase();
-        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
-        const isVideo = ['mp4', 'webm', 'ogg'].includes(ext);
+        const ext = doc.filename.split('.').pop().toLowerCase();
+        const filePath = `http://10.192.14.223:1880${doc.filepath}`;
 
-        // Set title with appropriate icon
-        let iconClass = 'fa-file';
-        if (isImage) iconClass = 'fa-file-image';
-        else if (isVideo) iconClass = 'fa-file-video';
-        else if (ext === 'pdf') iconClass = 'fa-file-pdf';
-        else if (['ppt', 'pptx'].includes(ext)) iconClass = 'fa-file-powerpoint';
-        else if (['doc', 'docx'].includes(ext)) iconClass = 'fa-file-word';
-
-        titleElement.innerHTML = `<i class="fas ${iconClass}"></i> ${doc.title}`;
+        titleElement.textContent = doc.title;
 
         // Show loading
         bodyElement.innerHTML = `
-            <div class="loading">
-                <i class="fas fa-spinner"></i>
-                <p>Chargement du document...</p>
+            <div class="d-flex justify-content-center align-items-center h-100">
+                <div class="text-center">
+                    <div class="spinner-border text-info" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Chargement du document...</p>
+                </div>
             </div>
         `;
 
-        // Open modal using Bootstrap
+        // Open modal
         const bsModal = new bootstrap.Modal(modal);
         bsModal.show();
 
         // Load document based on type
         setTimeout(() => {
             if (ext === 'pdf') {
-                // For PDF, use iframe with base64 data
                 bodyElement.innerHTML = `
-                    <iframe src="${doc.fileData}" type="application/pdf" style="width: 100%; height: 100%; border: none;"></iframe>
+                    <iframe src="${filePath}#toolbar=0&navpanes=0&scrollbar=1&view=FitH" type="application/pdf" style="width: 100%; height: 100%; border: none;"></iframe>
                 `;
-            } else if (isImage) {
-                // For images, display directly
+            } else if (['ppt', 'pptx'].includes(ext)) {
                 bodyElement.innerHTML = `
-                    <div class="image-viewer">
-                        <img src="${doc.fileData}" alt="${doc.title}" />
-                    </div>
-                `;
-            } else if (isVideo) {
-                // For videos, use video player
-                bodyElement.innerHTML = `
-                    <div class="video-viewer">
-                        <video controls>
-                            <source src="${doc.fileData}" type="${doc.fileType}">
-                            Votre navigateur ne supporte pas la lecture de vidéos.
-                        </video>
-                    </div>
-                `;
-            } else if (['ppt', 'pptx', 'doc', 'docx'].includes(ext)) {
-                // For Office documents, show notice with options
-                const docTypeName = ['ppt', 'pptx'].includes(ext) ? 'PowerPoint' : 'Word';
-                bodyElement.innerHTML = `
-                    <div class="ppt-viewer-notice">
-                        <i class="fas fa-file-${['ppt', 'pptx'].includes(ext) ? 'powerpoint' : 'word'}"></i>
-                        <h3>Visualisation ${docTypeName}</h3>
-                        <p>Les fichiers ${docTypeName} ne peuvent pas être visualisés directement dans le navigateur.</p>
-                        <p><strong>Options disponibles :</strong></p>
-                        <ul style="text-align: left; display: inline-block; margin-bottom: 1rem;">
-                            <li>Téléchargez le fichier pour l'ouvrir avec ${docTypeName}</li>
-                        </ul>
-                        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                            <button class="viewer-btn download" onclick="TrainingDocumentsModule.downloadDocument(${doc.id})">
-                                <i class="fas fa-download"></i> Télécharger
-                            </button>
-                        </div>
+                    <div class="d-flex flex-column justify-content-center align-items-center h-100 p-5">
+                        <i class="bi bi-file-earmark-slides text-warning" style="font-size: 5rem;"></i>
+                        <h4 class="mt-4">Visualisation PowerPoint</h4>
+                        <p class="text-muted text-center">Les fichiers PowerPoint ne peuvent pas être visualisés directement dans le navigateur.</p>
+                        <p class="text-center"><strong>Téléchargez le fichier pour l'ouvrir avec PowerPoint</strong></p>
+                        <button class="btn btn-success mt-3" onclick="TrainingDocumentsModule.downloadDocument(${doc.id})">
+                            <i class="bi bi-download me-2"></i>Télécharger
+                        </button>
                     </div>
                 `;
             }
         }, 500);
 
-        // Setup download button in footer
-        downloadBtn.onclick = () => this.downloadDocument(docId);
-
-        // Setup close buttons
-        this.setupViewerCloseHandlers();
-    },
-
-    // Open PowerPoint with Google Docs Viewer
-    openWithGoogleViewer: function(docId) {
-        UIModule.showToast('Pour utiliser Google Docs Viewer, le fichier doit être hébergé sur un serveur web public. Veuillez télécharger le fichier.', 'info');
-        this.downloadDocument(docId);
-    },
-
-    // Setup viewer close handlers
-    setupViewerCloseHandlers: function() {
-        const modal = document.getElementById('document-viewer-modal');
-        const closeBtn = document.getElementById('close-viewer');
-        const closeBtnFooter = document.getElementById('viewer-close-btn');
-
-        const closeViewer = () => {
-            if (modal) {
-                const bsModal = bootstrap.Modal.getInstance(modal);
-                if (bsModal) {
-                    bsModal.hide();
-                }
-            }
-        };
-
-        if (closeBtn) {
-            closeBtn.onclick = closeViewer;
-        }
-
-        if (closeBtnFooter) {
-            closeBtnFooter.onclick = closeViewer;
-        }
-
-        // Close on Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modal && modal.classList.contains('active')) {
-                closeViewer();
-            }
-        });
-
-        // Close on background click
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    closeViewer();
-                }
-            });
+        // Setup download button
+        if (downloadBtn) {
+            downloadBtn.onclick = () => this.downloadDocument(docId);
         }
     },
 
     // Download document
     downloadDocument: function(docId) {
-        const documents = DataManager.getTrainingDocuments();
-        const doc = documents.find(d => d.id === docId);
-
+        const doc = this.documents.find(d => d.id === docId);
         if (!doc) {
-            UIModule.showToast('Document non trouvé', 'error');
+            this.showToast('Document non trouvé', 'error');
             return;
         }
 
         try {
-            // Create download link
             const link = document.createElement('a');
-            link.href = doc.fileData;
-            link.download = doc.fileName;
+            link.href = `http://10.192.14.223:1880${doc.filepath}`;
+            link.download = doc.filename;
+            link.target = '_blank';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
-            // Increment download count
-            DataManager.incrementDownloadCount(docId);
-            this.displayDocuments();
-
-            UIModule.showToast(`Téléchargement de ${doc.fileName}`, 'success');
+            this.showToast(`Téléchargement de ${doc.filename}`, 'success');
         } catch (error) {
             console.error('Download error:', error);
-            UIModule.showToast('Erreur lors du téléchargement', 'error');
+            this.showToast('Erreur lors du téléchargement', 'error');
         }
     },
 
-    // Delete document
-    deleteDocument: function(docId) {
-        if (!SimpleAuth.isLoggedIn()) {
-            UIModule.showToast('Vous devez être connecté pour supprimer un document', 'error');
+    // Delete document (Admin only)
+    deleteDocument: async function(docId) {
+        if (typeof SimpleAuth === 'undefined' || !SimpleAuth.isAdmin()) {
+            this.showToast('Accès refusé: Admin uniquement', 'error');
             return;
         }
 
-        const documents = DataManager.getTrainingDocuments();
-        const doc = documents.find(d => d.id === docId);
-
+        const doc = this.documents.find(d => d.id === docId);
         if (!doc) {
-            UIModule.showToast('Document non trouvé', 'error');
+            this.showToast('Document non trouvé', 'error');
             return;
         }
 
-        if (UIModule.showConfirmation(`Êtes-vous sûr de vouloir supprimer le document "${doc.title}" ?`)) {
-            const deleted = DataManager.deleteTrainingDocument(docId);
+        if (!confirm(`Êtes-vous sûr de vouloir supprimer le document "${doc.title}" ?`)) {
+            return;
+        }
 
-            if (deleted) {
-                ActivityModule.addActivity({
-                    type: 'training_delete',
-                    title: 'Document de formation supprimé',
-                    description: doc.title,
-                    icon: 'trash',
-                    user: SimpleAuth.getCurrentUser()
-                });
+        try {
+            const response = await fetch(`${this.API_URL}/${docId}`, {
+                method: 'DELETE'
+            });
 
-                UIModule.showToast('Document supprimé avec succès', 'success');
-                this.displayDocuments();
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast('Document supprimé avec succès', 'success');
+                this.loadDocumentsFromServer();
             } else {
-                UIModule.showToast('Erreur lors de la suppression', 'error');
+                this.showToast('Erreur: ' + (result.error || 'Suppression échouée'), 'error');
             }
+        } catch (error) {
+            console.error('Delete error:', error);
+            this.showToast('Erreur lors de la suppression', 'error');
         }
     },
 
-    // Format file size
-    formatFileSize: function(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    // Show toast notification
+    showToast: function(message, type = 'info') {
+        // Utiliser le système de toast existant si disponible
+        if (typeof UIModule !== 'undefined' && UIModule.showToast) {
+            UIModule.showToast(message, type);
+        } else {
+            // Fallback simple
+            alert(message);
+        }
     },
 
     // Update UI based on authentication status
@@ -532,3 +552,6 @@ const TrainingDocumentsModule = {
         this.displayDocuments();
     }
 };
+
+// Exporter globalement
+window.TrainingDocumentsModule = TrainingDocumentsModule;

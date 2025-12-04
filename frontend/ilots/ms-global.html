@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secteur MS Global - Dashboard Qualité</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header avec animation */
+        .ilot-header {
+            background: linear-gradient(135deg, #7e22ce 0%, #a855f7 50%, #c084fc 100%);
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ilot-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .company-logo {
+            height: 80px;
+            width: auto;
+            background: white;
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-title h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin: 0;
+            color: white;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-title p {
+            font-size: 1.3rem;
+            margin: 5px 0 0 0;
+            color: white;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        .header-right {
+            text-align: right;
+            color: white;
+        }
+
+        .current-date {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .last-update {
+            font-size: 1rem;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+
+        /* Container principal */
+        .main-container {
+            padding: 30px;
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+
+        /* Loading animation */
+        .loading-container {
+            text-align: center;
+            padding: 100px 20px;
+        }
+
+        .spinner {
+            border: 8px solid rgba(255, 255, 255, 0.2);
+            border-top: 8px solid #7e22ce;
+            border-right: 8px solid #a855f7;
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            margin: 0 auto 30px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.6rem;
+            color: white;
+            font-weight: 700;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Indicator columns */
+        .indicators-wrapper {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .indicator-column {
+            background: white;
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .indicator-column:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3);
+        }
+
+        .column-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 35px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #7e22ce;
+        }
+
+        .column-icon {
+            font-size: 2.5rem;
+            color: #7e22ce;
+        }
+
+        .column-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .column-subtitle {
+            font-size: 1rem;
+            color: #64748b;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 25px;
+            border-radius: 18px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            border-color: #7e22ce;
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px rgba(126, 34, 206, 0.1);
+        }
+
+        .metric-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .metric-value {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #1e293b;
+            margin: 10px 0;
+            font-feature-settings: 'tnum';
+            letter-spacing: -1px;
+        }
+
+        .metric-label {
+            font-size: 0.95rem;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1400px) {
+            .header-title h1 { font-size: 2.8rem; }
+            .metric-value { font-size: 2.5rem; }
+        }
+
+        @media (max-width: 992px) {
+            .indicators-wrapper {
+                grid-template-columns: 1fr;
+            }
+            .header-title h1 { font-size: 2.2rem; }
+            .current-date { font-size: 1.4rem; }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            .header-right {
+                text-align: center;
+            }
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="ilot-header">
+        <div class="header-content">
+            <div class="header-left">
+                <img src="../assets/images/logo.jpg" alt="Schneider Electric" class="company-logo">
+                <div class="header-title">
+                    <h1><i class="bi bi-gear-wide-connected"></i> SECTEUR MS GLOBAL</h1>
+                    <p>Dashboard Qualité & Production en Temps Réel</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="current-date" id="currentDate"></div>
+                <div class="last-update" id="lastUpdate"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Loading State -->
+        <div id="loading" class="loading-container">
+            <div class="spinner"></div>
+            <div class="loading-text">Chargement des données du secteur MS...</div>
+        </div>
+
+        <!-- Content -->
+        <div id="content" style="display: none;">
+            <div class="indicators-wrapper">
+                <!-- Indicateurs de la veille -->
+                <div class="indicator-column">
+                    <div class="column-header">
+                        <i class="bi bi-bar-chart-line column-icon"></i>
+                        <div>
+                            <div class="column-title">📊 Période</div>
+                            <div class="column-subtitle">Indicateurs de la veille</div>
+                        </div>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <span class="metric-icon">📦</span>
+                            <div class="metric-value" id="yesterday-reject-qty">0</div>
+                            <div class="metric-label">Nombre de rebuts</div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">€</span>
+                            <div class="metric-value" id="yesterday-reject-value">0 €</div>
+                            <div class="metric-label">Valeur des rebuts</div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">📦</span>
+                            <div class="metric-value" id="yesterday-produced-qty">0</div>
+                            <div class="metric-label">Nombre d'unités produites</div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">💲</span>
+                            <div class="metric-value" id="yesterday-produced-value">0 €</div>
+                            <div class="metric-label">Valeur produite</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indicateurs du mois courant -->
+                <div class="indicator-column">
+                    <div class="column-header">
+                        <i class="bi bi-graph-up column-icon"></i>
+                        <div>
+                            <div class="column-title">📊 Période</div>
+                            <div class="column-subtitle">Indicateurs du mois courant</div>
+                        </div>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <span class="metric-icon">📦</span>
+                            <div class="metric-value" id="month-reject-qty">0</div>
+                            <div class="metric-label">Nombre de rebuts</div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">€</span>
+                            <div class="metric-value" id="month-reject-value">0 €</div>
+                            <div class="metric-label">Valeur des rebuts</div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">📦</span>
+                            <div class="metric-value" id="month-produced-qty">0</div>
+                            <div class="metric-label">Nombre d'unités produites</div>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-icon">💲</span>
+                            <div class="metric-value" id="month-produced-value">0 €</div>
+                            <div class="metric-label">Valeur produite</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration -->
+    <script src="../src/config.js"></script>
+
+    <script>
+        // Update current date and time
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            };
+            const dateString = now.toLocaleDateString('fr-FR', options);
+            document.getElementById('currentDate').textContent = dateString;
+        }
+
+        // Animate numbers
+        function animateNumber(elementId, finalValue, isCurrency = false) {
+            const element = document.getElementById(elementId);
+            const duration = 1500;
+            const steps = 60;
+            const stepValue = finalValue / steps;
+            let currentValue = 0;
+            let currentStep = 0;
+
+            const interval = setInterval(() => {
+                currentStep++;
+                currentValue += stepValue;
+
+                if (currentStep >= steps) {
+                    currentValue = finalValue;
+                    clearInterval(interval);
+                }
+
+                if (isCurrency) {
+                    element.textContent = Math.round(currentValue).toLocaleString('fr-FR') + ' €';
+                } else {
+                    element.textContent = Math.round(currentValue).toLocaleString('fr-FR');
+                }
+            }, duration / steps);
+        }
+
+        // Load data for MS Global (all machines)
+        async function loadMSGlobalData() {
+            try {
+                // Récupérer toutes les données du cache principal
+                const apiUrl = Config.apiData;
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (!result.success || !result.data) {
+                    throw new Error('Format de données invalide');
+                }
+
+                const allData = result.data;
+
+                // Filtrer toutes les machines 850MS
+                const msData = allData.filter(row => {
+                    const machine = row.Workcenter || row.Machine || '';
+                    return machine.startsWith('850MS');
+                });
+
+                console.log(`📊 Données MS Global: ${msData.length} lignes pour toutes les machines 850MS`);
+
+                // Calculer les métriques pour la veille (hier)
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+                const yesterdayData = msData.filter(row => {
+                    const dateKey = Object.keys(row).find(key =>
+                        key.toLowerCase().includes('date') || key === 'Production date'
+                    );
+                    const rowDate = row[dateKey];
+                    return rowDate && rowDate.includes(yesterdayStr);
+                });
+
+                // Calculer les totaux pour la veille
+                let yesterdayRejectQty = 0;
+                let yesterdayRejectValue = 0;
+                let yesterdayProducedQty = 0;
+                let yesterdayProducedValue = 0;
+
+                yesterdayData.forEach(row => {
+                    const rejectQty = parseFloat(row['Scrap Quantity'] || row['Reject Quantity'] || 0);
+                    const rejectValue = parseFloat(row['Scrap Value'] || row['Reject Value'] || 0);
+                    const producedQty = parseFloat(row['Yield Quantity'] || row['Produced Quantity'] || 0);
+                    const producedValue = parseFloat(row['Yield Value'] || row['Produced Value'] || 0);
+
+                    yesterdayRejectQty += rejectQty;
+                    yesterdayRejectValue += rejectValue;
+                    yesterdayProducedQty += producedQty;
+                    yesterdayProducedValue += producedValue;
+                });
+
+                // Calculer les métriques pour le mois courant
+                const currentMonth = new Date().getMonth() + 1;
+                const currentYear = new Date().getFullYear();
+
+                const monthData = msData.filter(row => {
+                    const dateKey = Object.keys(row).find(key =>
+                        key.toLowerCase().includes('date') || key === 'Production date'
+                    );
+                    const rowDate = row[dateKey];
+                    if (!rowDate) return false;
+
+                    const date = new Date(rowDate);
+                    return date.getMonth() + 1 === currentMonth && date.getFullYear() === currentYear;
+                });
+
+                // Calculer les totaux pour le mois
+                let monthRejectQty = 0;
+                let monthRejectValue = 0;
+                let monthProducedQty = 0;
+                let monthProducedValue = 0;
+
+                monthData.forEach(row => {
+                    const rejectQty = parseFloat(row['Scrap Quantity'] || row['Reject Quantity'] || 0);
+                    const rejectValue = parseFloat(row['Scrap Value'] || row['Reject Value'] || 0);
+                    const producedQty = parseFloat(row['Yield Quantity'] || row['Produced Quantity'] || 0);
+                    const producedValue = parseFloat(row['Yield Value'] || row['Produced Value'] || 0);
+
+                    monthRejectQty += rejectQty;
+                    monthRejectValue += rejectValue;
+                    monthProducedQty += producedQty;
+                    monthProducedValue += producedValue;
+                });
+
+                // Afficher la dernière mise à jour
+                const lastUpdateElement = document.getElementById('lastUpdate');
+                const cacheDate = new Date(result.cacheCreatedAt);
+                lastUpdateElement.textContent = `Dernière mise à jour: ${cacheDate.toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}`;
+
+                // Animer les valeurs de la veille
+                animateNumber('yesterday-reject-qty', yesterdayRejectQty);
+                animateNumber('yesterday-reject-value', yesterdayRejectValue, true);
+                animateNumber('yesterday-produced-qty', yesterdayProducedQty);
+                animateNumber('yesterday-produced-value', yesterdayProducedValue, true);
+
+                // Animer les valeurs du mois
+                animateNumber('month-reject-qty', monthRejectQty);
+                animateNumber('month-reject-value', monthRejectValue, true);
+                animateNumber('month-produced-qty', monthProducedQty);
+                animateNumber('month-produced-value', monthProducedValue, true);
+
+                // Afficher le contenu
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+
+            } catch (error) {
+                console.error('Erreur lors du chargement des données MS Global:', error);
+                document.getElementById('loading').innerHTML =
+                    '<div class="loading-text" style="color: #f5576c;">❌ Erreur: ' + error.message + '</div>';
+            }
+        }
+
+        // Initialize page
+        function initializePage() {
+            updateCurrentDate();
+            loadMSGlobalData();
+        }
+
+        // Initialize on load
+        initializePage();
+    </script>
+</body>
+
+</html>

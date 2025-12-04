@@ -43,41 +43,46 @@ const DocumentsModule = {
         // Calculate total documents
         let totalDocs = 0;
 
-        // Create tab for each machine (Bootstrap cards)
+        // Set grid layout for container
+        tabsContainer.style.display = 'grid';
+        tabsContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
+        tabsContainer.style.gap = '1rem';
+
+        // Create tab for each machine (Modern cards)
         for (const [index, machine] of machines.entries()) {
             const documents = await DataManager.getDocumentsByMachine(machine);
             totalDocs += documents.length;
 
-            // Create column wrapper
-            const col = document.createElement('div');
-            col.className = 'col-6 col-sm-4 col-md-3 col-lg-2';
-
-            const tab = document.createElement('button');
-            tab.className = 'machine-tab btn w-100 h-100 d-flex flex-column align-items-center justify-content-center gap-1 p-2 border rounded-3 transition-all';
+            const tab = document.createElement('div');
+            tab.className = 'machine-card';
             tab.dataset.machine = machine;
 
             // First tab is active by default
             if (index === 0) {
-                tab.classList.add('active', 'btn-success');
+                tab.classList.add('active');
                 this.currentMachineFilter = machine;
-            } else {
-                tab.classList.add('btn-outline-secondary', 'bg-white');
             }
 
             tab.innerHTML = `
-                <div class="machine-tab-icon rounded-circle d-flex align-items-center justify-content-center mb-1" style="width: 36px; height: 36px;">
-                    <i class="fas fa-industry"></i>
+                <div class="machine-card-header">
+                    <div class="machine-icon">
+                        <i class="bi bi-cpu"></i>
+                    </div>
                 </div>
-                <span class="machine-tab-name fw-bold small">${machine}</span>
-                <span class="machine-tab-count badge ${index === 0 ? 'bg-white text-success' : 'bg-success bg-opacity-10 text-success'} rounded-pill">${documents.length} doc(s)</span>
+                <div class="machine-card-body">
+                    <h6 class="machine-name">${machine}</h6>
+                    <div class="machine-stats">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span>${documents.length} document${documents.length > 1 ? 's' : ''}</span>
+                    </div>
+                </div>
             `;
 
             tab.addEventListener('click', () => {
                 this.selectMachineTab(machine);
             });
 
-            col.appendChild(tab);
-            tabsContainer.appendChild(col);
+            tabsContainer.appendChild(tab);
         }
 
         // Update header stats
@@ -100,24 +105,13 @@ const DocumentsModule = {
     selectMachineTab: async function(machine) {
         this.currentMachineFilter = machine;
 
-        // Update active tab (Bootstrap classes)
-        const tabs = document.querySelectorAll('.machine-tab');
+        // Update active tab
+        const tabs = document.querySelectorAll('.machine-card');
         tabs.forEach(tab => {
-            const badge = tab.querySelector('.machine-tab-count');
             if (tab.dataset.machine === machine) {
-                tab.classList.add('active', 'btn-success');
-                tab.classList.remove('btn-outline-secondary', 'bg-white');
-                if (badge) {
-                    badge.classList.remove('bg-success', 'bg-opacity-10', 'text-success');
-                    badge.classList.add('bg-white', 'text-success');
-                }
+                tab.classList.add('active');
             } else {
-                tab.classList.remove('active', 'btn-success');
-                tab.classList.add('btn-outline-secondary', 'bg-white');
-                if (badge) {
-                    badge.classList.add('bg-success', 'bg-opacity-10', 'text-success');
-                    badge.classList.remove('bg-white');
-                }
+                tab.classList.remove('active');
             }
         });
 
@@ -287,10 +281,8 @@ const DocumentsModule = {
             return;
         }
 
-        // Validate file size (10MB max for images/videos, 5MB for documents)
-        const maxSize = file.type.startsWith('image/') || file.type.startsWith('video/')
-            ? 10 * 1024 * 1024 // 10MB for media
-            : 5 * 1024 * 1024;  // 5MB for documents
+        // Validate file size (50MB max to match server limit)
+        const maxSize = 50 * 1024 * 1024; // 50MB
 
         if (file.size > maxSize) {
             const maxSizeMB = maxSize / (1024 * 1024);
@@ -327,23 +319,18 @@ const DocumentsModule = {
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Upload en cours...';
 
         try {
-            // Read file as base64
-            const base64 = await this.readFileAsBase64(file);
+            // Create FormData for file upload
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('title', document.getElementById('doc-upload-title').value);
+            formData.append('category', document.getElementById('doc-upload-category').value);
+            formData.append('machine', document.getElementById('doc-upload-machine').value);
+            formData.append('description', document.getElementById('doc-upload-description').value || '');
+            formData.append('uploaded_by', SimpleAuth.getCurrentUser() || 'Anonymous');
+            formData.append('uploadType', 'documents'); // For multer
 
-            // Get form data
-            const docData = {
-                title: document.getElementById('doc-upload-title').value,
-                category: document.getElementById('doc-upload-category').value,
-                machine: document.getElementById('doc-upload-machine').value,
-                description: document.getElementById('doc-upload-description').value || '',
-                fileName: file.name,
-                fileType: file.type,
-                fileSize: file.size,
-                fileData: base64
-            };
-
-            // Save to storage
-            const saved = await DataManager.addQualityDocument(docData);
+            // Save to server
+            const saved = await DataManager.addQualityDocument(formData);
 
             if (saved) {
                 // Add activity
@@ -359,10 +346,13 @@ const DocumentsModule = {
                     'other': 'Autre'
                 };
 
+                const title = document.getElementById('doc-upload-title').value;
+                const category = document.getElementById('doc-upload-category').value;
+
                 ActivityModule.addActivity({
                     type: 'document_upload',
                     title: 'Document qualité ajouté',
-                    description: `${docData.title} - ${categoryNames[docData.category]}`,
+                    description: `${title} - ${categoryNames[category]}`,
                     icon: 'file-upload',
                     user: SimpleAuth.getCurrentUser()
                 });
@@ -376,7 +366,7 @@ const DocumentsModule = {
                 await this.displayDocuments();
                 UIModule.updateStats(); // Update document count
             } else {
-                UIModule.showToast('Erreur lors de l\'enregistrement. Espace de stockage insuffisant.', 'error');
+                UIModule.showToast('Erreur lors de l\'upload du document. Veuillez réessayer.', 'error');
             }
         } catch (error) {
             console.error('Upload error:', error);
@@ -386,16 +376,6 @@ const DocumentsModule = {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalText;
         }
-    },
-
-    // Read file as base64
-    readFileAsBase64: function(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
     },
 
     // Display quality documents
@@ -419,25 +399,43 @@ const DocumentsModule = {
 
         documentsGrid.innerHTML = '';
 
+        documentsGrid.style.display = 'grid';
+        documentsGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(420px, 1fr))';
+        documentsGrid.style.gap = '1.5rem';
+        documentsGrid.style.padding = '1rem 0';
+
         documents.forEach(doc => {
             const docItem = document.createElement('div');
-            docItem.className = 'quality-doc-item';
+            docItem.className = 'fiche-card-modern';
 
-            // Get file extension and type
-            const ext = doc.fileName.split('.').pop().toLowerCase();
-            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
-            const isVideo = ['mp4', 'webm', 'ogg'].includes(ext);
+            // Get file extension and type (support both filename and fileName)
+            const fileName = doc.filename || doc.fileName;
+            const ext = fileName.split('.').pop().toLowerCase();
             const isPDF = ext === 'pdf';
             const isPPT = ['ppt', 'pptx'].includes(ext);
             const isDoc = ['doc', 'docx'].includes(ext);
+            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+            const isVideo = ['mp4', 'webm', 'ogg'].includes(ext);
 
-            // Get icon class
-            let iconClass = 'fa-file';
-            if (isImage) iconClass = 'fa-file-image';
-            else if (isVideo) iconClass = 'fa-file-video';
-            else if (isPDF) iconClass = 'fa-file-pdf';
-            else if (isPPT) iconClass = 'fa-file-powerpoint';
-            else if (isDoc) iconClass = 'fa-file-word';
+            // Get icon and badge style
+            let iconClass = 'bi-file-earmark';
+            let badgeColor = '#667eea';
+            if (isPDF) {
+                iconClass = 'bi-file-earmark-pdf';
+                badgeColor = '#ef4444';
+            } else if (isPPT) {
+                iconClass = 'bi-file-earmark-slides';
+                badgeColor = '#f59e0b';
+            } else if (isDoc) {
+                iconClass = 'bi-file-earmark-word';
+                badgeColor = '#3b82f6';
+            } else if (isImage) {
+                iconClass = 'bi-file-earmark-image';
+                badgeColor = '#10b981';
+            } else if (isVideo) {
+                iconClass = 'bi-camera-video';
+                badgeColor = '#8b5cf6';
+            }
 
             // Category names
             const categoryNames = {
@@ -452,54 +450,67 @@ const DocumentsModule = {
                 'other': 'Autre'
             };
 
-            // Format file size
-            const fileSize = this.formatFileSize(doc.fileSize);
-
-            // Format upload date
-            const uploadDate = Utils.formatDate(doc.uploadDate);
-
-            // Build actions based on authentication
-            let actionsHTML = `
-                <button class="doc-btn view" onclick="DocumentsModule.viewDocument(${doc.id})">
-                    <i class="fas fa-eye"></i> Consulter
-                </button>
-                <button class="doc-btn download" onclick="DocumentsModule.downloadDocument(${doc.id})">
-                    <i class="fas fa-download"></i> Télécharger
-                </button>
-            `;
-
-            if (SimpleAuth.isLoggedIn()) {
-                actionsHTML += `
-                    <button class="doc-btn edit" onclick="DocumentsModule.editDocument(${doc.id})">
-                        <i class="fas fa-edit"></i> Modifier
-                    </button>
-                    <button class="doc-btn delete" onclick="DocumentsModule.deleteDocument(${doc.id})">
-                        <i class="fas fa-trash"></i> Supprimer
-                    </button>
-                `;
-            }
+            // Format upload date (support both uploaded_at and uploadDate)
+            const uploadDate = Utils.formatDate(doc.uploaded_at || doc.uploadDate);
 
             docItem.innerHTML = `
-                <div class="doc-icon ${ext}">
-                    <i class="fas ${iconClass}"></i>
-                </div>
-                <div class="doc-info">
-                    <h3>${doc.title}</h3>
-                    ${doc.description ? `<p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">${doc.description}</p>` : ''}
-                    <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
-                        <span class="doc-category">${categoryNames[doc.category] || doc.category}</span>
-                        ${doc.machine ? `<span class="doc-category" style="background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);"><i class="fas fa-industry"></i> ${doc.machine}</span>` : ''}
-                    </div>
-                    <div class="doc-meta">
-                        <span><i class="fas fa-file"></i> ${fileSize}</span>
-                        <span><i class="fas fa-calendar"></i> ${uploadDate}</span>
-                        <span><i class="fas fa-user"></i> ${doc.uploadedBy}</span>
-                        <span><i class="fas fa-download"></i> ${doc.downloads || 0} téléchargement(s)</span>
-                        <span><i class="fas fa-eye"></i> ${doc.views || 0} vue(s)</span>
+                <div class="fiche-card-header">
+                    <div class="fiche-numero-ref">
+                        <span class="fiche-numero" style="background: ${badgeColor};">
+                            <i class="bi ${iconClass} me-1"></i>${ext.toUpperCase()}
+                        </span>
+                        <h6 class="fiche-reference">${doc.title}</h6>
                     </div>
                 </div>
-                <div class="doc-actions">
-                    ${actionsHTML}
+
+                ${doc.description ? `<p class="fiche-libelle">${doc.description}</p>` : ''}
+
+                <div class="fiche-info-grid">
+                    <div class="fiche-info-item">
+                        <i class="bi bi-tag info-icon"></i>
+                        <div>
+                            <span class="info-label">Catégorie</span>
+                            <span class="info-value">${categoryNames[doc.category] || doc.category}</span>
+                        </div>
+                    </div>
+
+                    <div class="fiche-info-item">
+                        <i class="bi bi-gear-wide-connected info-icon"></i>
+                        <div>
+                            <span class="info-label">Machine</span>
+                            <span class="info-value">${doc.machine || 'N/A'}</span>
+                        </div>
+                    </div>
+
+                    <div class="fiche-info-item">
+                        <i class="bi bi-calendar-event info-icon"></i>
+                        <div>
+                            <span class="info-label">Date ajout</span>
+                            <span class="info-value">${uploadDate}</span>
+                        </div>
+                    </div>
+
+                    <div class="fiche-info-item">
+                        <i class="bi bi-person-badge info-icon"></i>
+                        <div>
+                            <span class="info-label">Ajouté par</span>
+                            <span class="info-value">${doc.uploaded_by || doc.uploadedBy || 'Anonyme'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fiche-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-sm btn-outline-primary" onclick="DocumentsModule.viewDocument('${doc.id}')" style="flex: 1; white-space: nowrap;">
+                        <i class="bi bi-eye me-1"></i>Consulter
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="DocumentsModule.downloadDocument('${doc.id}')" style="flex: 1; white-space: nowrap;">
+                        <i class="bi bi-download me-1"></i>Télécharger
+                    </button>
+                    ${SimpleAuth.isLoggedIn() ? `
+                    <button class="btn btn-sm btn-outline-danger" onclick="DocumentsModule.deleteDocument('${doc.id}')" style="white-space: nowrap;">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    ` : ''}
                 </div>
             `;
 
@@ -509,7 +520,7 @@ const DocumentsModule = {
 
     // View document in modal
     viewDocument: async function(docId) {
-        const documents = DataManager.getDocuments();
+        const documents = await DataManager.getDocuments();
         const doc = documents.find(d => d.id === docId);
 
         if (!doc) {
@@ -529,7 +540,7 @@ const DocumentsModule = {
         await this.displayDocuments();
 
         // Get file extension
-        const ext = doc.fileName.split('.').pop().toLowerCase();
+        const ext = doc.filename.split('.').pop().toLowerCase();
         const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
         const isVideo = ['mp4', 'webm', 'ogg'].includes(ext);
 
@@ -555,18 +566,21 @@ const DocumentsModule = {
         const bsModal = new bootstrap.Modal(modal);
         bsModal.show();
 
+        // Get file path (use filepath from server or fileData from localStorage)
+        const filePath = doc.filepath || doc.fileData;
+
         // Load document based on type
         setTimeout(() => {
             if (ext === 'pdf') {
-                // PDF viewer
+                // PDF viewer - Add parameters to hide sidebar
                 bodyElement.innerHTML = `
-                    <iframe src="${doc.fileData}" type="application/pdf"></iframe>
+                    <iframe src="${filePath}#toolbar=0&navpanes=0&scrollbar=1&view=FitH" type="application/pdf"></iframe>
                 `;
             } else if (isImage) {
                 // Image viewer
                 bodyElement.innerHTML = `
                     <div class="image-viewer">
-                        <img src="${doc.fileData}" alt="${doc.title}" />
+                        <img src="${filePath}" alt="${doc.title}" />
                     </div>
                 `;
             } else if (isVideo) {
@@ -574,7 +588,7 @@ const DocumentsModule = {
                 bodyElement.innerHTML = `
                     <div class="video-viewer">
                         <video controls>
-                            <source src="${doc.fileData}" type="${doc.fileType}">
+                            <source src="${filePath}" type="${doc.fileType || 'video/mp4'}">
                             Votre navigateur ne supporte pas la lecture de vidéos.
                         </video>
                     </div>
@@ -636,7 +650,7 @@ const DocumentsModule = {
 
     // Download document
     downloadDocument: async function(docId) {
-        const documents = DataManager.getDocuments();
+        const documents = await DataManager.getDocuments();
         const doc = documents.find(d => d.id === docId);
 
         if (!doc) {
@@ -645,10 +659,15 @@ const DocumentsModule = {
         }
 
         try {
+            // Get file path (use filepath from server or fileData from localStorage)
+            const filePath = doc.filepath || doc.fileData;
+            const fileName = doc.filename || doc.fileName;
+
             // Create download link
             const link = document.createElement('a');
-            link.href = doc.fileData;
-            link.download = doc.fileName;
+            link.href = filePath;
+            link.download = fileName;
+            link.target = '_blank'; // Open in new tab for server files
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -657,7 +676,7 @@ const DocumentsModule = {
             DataManager.incrementQualityDocumentDownloads(docId);
             await this.displayDocuments();
 
-            UIModule.showToast(`Téléchargement de ${doc.fileName}`, 'success');
+            UIModule.showToast(`Téléchargement de ${fileName}`, 'success');
         } catch (error) {
             console.error('Download error:', error);
             UIModule.showToast('Erreur lors du téléchargement', 'error');
@@ -671,7 +690,7 @@ const DocumentsModule = {
             return;
         }
 
-        const documents = DataManager.getDocuments();
+        const documents = await DataManager.getDocuments();
         const doc = documents.find(d => d.id === docId);
 
         if (!doc) {
@@ -704,7 +723,7 @@ const DocumentsModule = {
             return;
         }
 
-        const documents = DataManager.getDocuments();
+        const documents = await DataManager.getDocuments();
         const doc = documents.find(d => d.id === docId);
 
         if (!doc) {
