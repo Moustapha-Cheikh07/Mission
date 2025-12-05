@@ -93,19 +93,28 @@ if (refsResult.success) {
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         const uploadType = req.body.uploadType || 'documents';
-        const uploadDir = path.join(__dirname, '..', 'assets', uploadType);
+        let uploadDir;
+
+        if (uploadType === 'documents') {
+            // Documents qualité : organiser par machine
+            const machine = req.body.machine || 'general';
+            uploadDir = path.join(__dirname, '..', 'assets', 'documents', machine);
+        } else {
+            // Documents formation : tous ensemble
+            uploadDir = path.join(__dirname, '..', 'assets', uploadType);
+        }
 
         // Create directory if it doesn't exist
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
+            console.log(`📁 Dossier créé: ${uploadDir}`);
         }
 
         cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
-        // Generate unique filename
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + '-' + file.originalname);
+        // Utiliser le nom original du fichier (sans timestamp)
+        cb(null, file.originalname);
     }
 });
 
@@ -176,18 +185,19 @@ app.post('/api/documents/quality', upload.single('file'), async (req, res) => {
             return res.status(400).json({ success: false, error: 'No file uploaded' });
         }
 
+        const machine = req.body.machine || 'general';
+
         const doc = {
             title: req.body.title,
-            category: req.body.category,
-            machine: req.body.machine,
+            machine: machine,
             description: req.body.description || '',
             filename: req.file.originalname,
-            filepath: `/assets/documents/${req.file.filename}`,
+            filepath: `/assets/documents/${machine}/${req.file.filename}`,
             uploaded_by: req.body.uploaded_by || 'Anonymous'
         };
 
         const result = await db.addQualityDocument(doc);
-        res.json({ success: true, id: result.lastID, document: doc });
+        res.json({ success: true, id: result.id, document: result.document });
     } catch (error) {
         console.error('Error uploading quality document:', error);
         res.status(500).json({ success: false, error: error.message });
@@ -229,7 +239,6 @@ app.post('/api/documents/training', upload.single('file'), async (req, res) => {
 
         const doc = {
             title: req.body.title,
-            category: req.body.category,
             description: req.body.description || '',
             filename: req.file.originalname,
             filepath: `/assets/training/${req.file.filename}`,
@@ -237,7 +246,7 @@ app.post('/api/documents/training', upload.single('file'), async (req, res) => {
         };
 
         const result = await db.addTrainingDocument(doc);
-        res.json({ success: true, id: result.lastID, document: doc });
+        res.json({ success: true, id: result.id, document: result.document });
     } catch (error) {
         console.error('Error uploading training document:', error);
         res.status(500).json({ success: false, error: error.message });

@@ -180,7 +180,6 @@ const TrainingDocumentsModule = {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('title', document.getElementById('doc-title').value);
-            formData.append('category', document.getElementById('doc-category').value);
             formData.append('description', document.getElementById('doc-description').value || '');
             formData.append('uploaded_by', SimpleAuth.getCurrentUser() || 'Admin');
             formData.append('uploadType', 'training'); // Pour multer
@@ -253,48 +252,16 @@ const TrainingDocumentsModule = {
             return;
         }
 
-        // Group documents by category
-        const categories = {
-            'basics': { name: 'Concepts de base', docs: [], icon: 'bi-book' },
-            'controls': { name: 'Contrôles qualité', docs: [], icon: 'bi-clipboard-check' },
-            'procedures': { name: 'Procédures', docs: [], icon: 'bi-list-check' },
-            'standards': { name: 'Normes', docs: [], icon: 'bi-award' },
-            'tools': { name: 'Outils', docs: [], icon: 'bi-tools' },
-            'other': { name: 'Autre', docs: [], icon: 'bi-file-earmark' }
-        };
+        // Afficher tous les documents en grille (sans catégories)
+        documentsList.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 1.5rem; padding: 1rem 0;"></div>
+        `;
+
+        const gridContainer = documentsList.querySelector('div');
 
         this.documents.forEach(doc => {
-            const category = doc.category || 'other';
-            if (categories[category]) {
-                categories[category].docs.push(doc);
-            } else {
-                categories['other'].docs.push(doc);
-            }
-        });
-
-        documentsList.innerHTML = '';
-
-        // Display each category
-        Object.keys(categories).forEach(catKey => {
-            const cat = categories[catKey];
-            if (cat.docs.length === 0) return;
-
-            const categoryDiv = document.createElement('div');
-            categoryDiv.className = 'mb-4';
-            categoryDiv.innerHTML = `
-                <h6 class="text-info mb-3">
-                    <i class="${cat.icon} me-2"></i>${cat.name} (${cat.docs.length})
-                </h6>
-                <div id="category-${catKey}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 1.5rem; padding: 1rem 0;"></div>
-            `;
-            documentsList.appendChild(categoryDiv);
-
-            const categoryContainer = categoryDiv.querySelector(`#category-${catKey}`);
-
-            cat.docs.forEach(doc => {
-                const docCard = this.createDocumentCard(doc, isAdmin);
-                categoryContainer.appendChild(docCard);
-            });
+            const docCard = this.createDocumentCard(doc, isAdmin);
+            gridContainer.appendChild(docCard);
         });
     },
 
@@ -336,16 +303,6 @@ const TrainingDocumentsModule = {
         // Escape doc.id for safe use in onclick (it's a string with special chars)
         const escapedId = doc.id.replace(/'/g, "\\'");
 
-        // Category names
-        const categoryNames = {
-            'basics': 'Concepts de base',
-            'controls': 'Contrôles qualité',
-            'procedures': 'Procédures',
-            'standards': 'Normes',
-            'tools': 'Outils',
-            'other': 'Autre'
-        };
-
         col.innerHTML = `
             <div class="fiche-card-modern">
                 <div class="fiche-card-header">
@@ -360,14 +317,6 @@ const TrainingDocumentsModule = {
                 ${doc.description ? `<p class="fiche-libelle">${doc.description}</p>` : ''}
 
                 <div class="fiche-info-grid">
-                    <div class="fiche-info-item">
-                        <i class="bi bi-tag info-icon"></i>
-                        <div>
-                            <span class="info-label">Catégorie</span>
-                            <span class="info-value">${categoryNames[doc.category] || 'Autre'}</span>
-                        </div>
-                    </div>
-
                     <div class="fiche-info-item">
                         <i class="bi bi-file-earmark-text info-icon"></i>
                         <div>

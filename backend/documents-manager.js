@@ -60,7 +60,6 @@ const DocumentsManager = {
         const newDoc = {
             id: this.generateId(),
             title: doc.title,
-            category: doc.category,
             description: doc.description || '',
             filename: doc.filename,
             filepath: doc.filepath,
@@ -135,8 +134,7 @@ const DocumentsManager = {
         const newDoc = {
             id: this.generateId(),
             title: doc.title,
-            category: doc.category,
-            machine: doc.machine,
+            machine: doc.machine || 'general',
             description: doc.description || '',
             filename: doc.filename,
             filepath: doc.filepath,

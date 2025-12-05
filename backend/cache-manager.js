@@ -11,9 +11,106 @@ const EXCEL_FILE_PATH = path.join(__dirname, 'data', 'sap_export.xlsx');
 const CACHE_DIR = path.join(__dirname, 'cache');
 const CACHE_FILE_PATH = path.join(CACHE_DIR, 'data_cache.json');
 
+// Fonction pour trouver le fichier de prix (gestion des encodages)
+function findPriceFile() {
+    const dataDir = path.join(__dirname, 'data');
+    const files = fs.readdirSync(dataDir);
+
+    // Chercher un fichier qui commence par "Prix" et contient "2025" et finit par ".xlsx"
+    const priceFile = files.find(f => {
+        const lower = f.toLowerCase();
+        return lower.startsWith('prix') &&
+               lower.includes('2025') &&
+               lower.endsWith('.xlsx') &&
+               !lower.startsWith('~$'); // Exclure les fichiers temporaires Excel
+    });
+
+    if (priceFile) {
+        return path.join(dataDir, priceFile);
+    }
+    return null;
+}
+
 // Créer le dossier cache s'il n'existe pas
 if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
+}
+
+/**
+ * Charge les prix depuis le fichier "Prix pièces 2025.xlsx"
+ * Retourne un Map avec Material => Prix unitaire
+ */
+function loadPrices() {
+    try {
+        log.info('Chargement des prix depuis Prix pièces 2025.xlsx...');
+        console.log('💰 [PRIX] Chargement des prix...');
+
+        // Trouver le fichier de prix
+        const PRICE_FILE_PATH = findPriceFile();
+
+        if (!PRICE_FILE_PATH) {
+            log.warn('Prix file not found in data directory');
+            console.warn('⚠️  [PRIX] Fichier de prix introuvable, utilisation des prix SAP par défaut');
+            return null;
+        }
+
+        console.log(`💰 [PRIX] Fichier trouvé: ${path.basename(PRICE_FILE_PATH)}`);
+
+        // Lire le fichier Excel des prix
+        const priceWorkbook = xlsx.readFile(PRICE_FILE_PATH);
+        const priceSheetName = priceWorkbook.SheetNames[0];
+        const priceWorksheet = priceWorkbook.Sheets[priceSheetName];
+        const priceData = xlsx.utils.sheet_to_json(priceWorksheet, { raw: false });
+
+        // Créer un Map pour accès rapide Material => Prix
+        const priceMap = new Map();
+
+        priceData.forEach((row, index) => {
+            // Chercher la colonne Material
+            const material = row['Material'] || row['material'] || row['MATERIAL'];
+
+            // Chercher la colonne DVC 2025 (prix pour 1000 pièces)
+            const priceFor1000 = row['DVC 2025'] || row['DVC2025'] || row['dvc 2025'];
+
+            if (material && priceFor1000) {
+                // Nettoyer et convertir le prix
+                let priceValue = priceFor1000;
+
+                if (typeof priceValue === 'string') {
+                    // Enlever le symbole € et les espaces
+                    priceValue = priceValue.replace('€', '').trim();
+                    // Enlever les virgules (séparateur de milliers): 54,121.55 → 54121.55
+                    priceValue = priceValue.replace(/,/g, '');
+                    // Le point reste comme séparateur décimal
+                }
+
+                const priceNum = parseFloat(priceValue);
+
+                if (!isNaN(priceNum) && priceNum > 0) {
+                    // IMPORTANT: Diviser par 1000 car les prix sont pour 1000 pièces
+                    // Exemple: 54121.55€ / 1000 = 54.12155€/pièce
+                    const unitPrice = priceNum / 1000;
+                    priceMap.set(String(material).trim(), unitPrice);
+
+                    // Log des 3 premiers prix pour debug
+                    if (index < 3) {
+                        log.info(`Exemple prix: ${material} = ${priceNum.toFixed(2)}€/1000pcs → ${unitPrice.toFixed(5)}€/pc`);
+                        console.log(`   ${material}: ${priceNum.toFixed(2)}€/1000pcs → ${unitPrice.toFixed(5)}€/pc`);
+                    }
+                }
+            }
+        });
+
+        log.info(`${priceMap.size} prix chargés depuis le fichier Excel`);
+        console.log(`✅ [PRIX] ${priceMap.size} prix chargés avec succès`);
+
+        return priceMap;
+
+    } catch (error) {
+        log.error('Erreur lors du chargement des prix:', error);
+        console.error('❌ [PRIX] Erreur:', error.message);
+        return null;
+    }
 }
 
 /**
@@ -27,7 +124,10 @@ async function refreshCache() {
     console.log(`📅 Date/Heure : ${new Date().toLocaleString('fr-FR')}`);
 
     try {
-        // Vérifier si le fichier Excel existe
+        // Charger les prix depuis le fichier Excel
+        const priceMap = loadPrices();
+
+        // Vérifier si le fichier Excel SAP existe
         if (!fs.existsSync(EXCEL_FILE_PATH)) {
             const error = `Excel file not found: ${EXCEL_FILE_PATH}`;
             log.error(error);
@@ -64,11 +164,51 @@ async function refreshCache() {
 
         log.info(`Filtered 850MS rows: ${filteredData.length}`);
 
+        // Enrichir les données avec les prix unitaires corrects
+        let pricesApplied = 0;
+        let pricesNotFound = 0;
+
+        if (priceMap) {
+            console.log('💰 [PRIX] Application des prix aux données...');
+
+            filteredData.forEach(row => {
+                // Trouver la colonne Material dans la ligne
+                const materialKey = Object.keys(row).find(key => {
+                    const lowerKey = key.toLowerCase();
+                    return lowerKey === 'material' || lowerKey === 'matériel';
+                });
+
+                if (materialKey) {
+                    const material = String(row[materialKey] || '').trim();
+
+                    if (material) {
+                        // Chercher le prix dans le priceMap
+                        const unitPrice = priceMap.get(material);
+
+                        if (unitPrice !== undefined) {
+                            // Remplacer le prix unitaire par celui du fichier Prix
+                            row['Prix UNIT'] = unitPrice;
+                            pricesApplied++;
+                        } else {
+                            pricesNotFound++;
+                        }
+                    }
+                }
+            });
+
+            console.log(`✅ [PRIX] ${pricesApplied} prix appliqués`);
+            if (pricesNotFound > 0) {
+                console.log(`⚠️  [PRIX] ${pricesNotFound} références sans prix trouvé (prix SAP conservé)`);
+            }
+        }
+
         // Préparer les métadonnées du cache
         const cacheData = {
             success: true,
             count: filteredData.length,
             totalRows: jsonData.length,
+            pricesApplied: pricesApplied,
+            pricesNotFound: pricesNotFound,
             lastModified: fs.statSync(EXCEL_FILE_PATH).mtime,
             cacheCreatedAt: new Date().toISOString(),
             data: filteredData

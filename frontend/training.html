@@ -82,25 +82,13 @@
                 <div class="card-body">
                     <form id="training-upload-form">
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <label class="form-label fw-medium">Titre</label>
-                                <input type="text" id="doc-title" class="form-control" placeholder="Titre" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-medium">Catégorie</label>
-                                <select id="doc-category" class="form-select" required>
-                                    <option value="">Sélectionner...</option>
-                                    <option value="basics">Concepts de base</option>
-                                    <option value="controls">Contrôles qualité</option>
-                                    <option value="procedures">Procédures</option>
-                                    <option value="standards">Normes</option>
-                                    <option value="tools">Outils</option>
-                                    <option value="other">Autre</option>
-                                </select>
+                                <input type="text" id="doc-title" class="form-control" placeholder="Titre du document" required>
                             </div>
                             <div class="col-12">
                                 <label class="form-label fw-medium">Description</label>
-                                <textarea id="doc-description" class="form-control" rows="2"></textarea>
+                                <textarea id="doc-description" class="form-control" rows="2" placeholder="Description du document (optionnel)"></textarea>
                             </div>
                             <div class="col-12">
                                 <label class="form-label fw-medium">Fichier (PDF, PPT, PPTX)</label>
