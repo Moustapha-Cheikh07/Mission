@@ -420,6 +420,8 @@ const TrainingDocumentsModule = {
             return;
         }
 
+        console.log('📄 Viewing document:', doc);
+
         const modal = document.getElementById('document-viewer-modal');
         const titleElement = document.getElementById('viewer-doc-title');
         const bodyElement = document.getElementById('viewer-body');
@@ -428,7 +430,17 @@ const TrainingDocumentsModule = {
         if (!modal || !titleElement || !bodyElement) return;
 
         const ext = doc.filename.split('.').pop().toLowerCase();
-        const filePath = `http://10.192.14.223:1880${doc.filepath}`;
+
+        // Construire l'URL de base depuis la configuration
+        const baseURL = this.API_URL.replace('/api/documents/training', '');
+        const filePath = `${baseURL}${doc.filepath}`;
+
+        console.log('📄 Base URL:', baseURL);
+        console.log('📄 Document filepath:', doc.filepath);
+        console.log('📄 Final file path:', filePath);
+
+        // Escape doc.id for safe use in onclick
+        const escapedId = String(doc.id).replace(/'/g, "\\'");
 
         titleElement.textContent = doc.title;
 
@@ -451,8 +463,26 @@ const TrainingDocumentsModule = {
         // Load document based on type
         setTimeout(() => {
             if (ext === 'pdf') {
+                // Afficher le PDF avec des options de secours
                 bodyElement.innerHTML = `
-                    <iframe src="${filePath}#toolbar=0&navpanes=0&scrollbar=1&view=FitH" type="application/pdf" style="width: 100%; height: 100%; border: none;"></iframe>
+                    <div style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+                        <div style="flex: 1; overflow: hidden; position: relative;">
+                            <embed
+                                src="${filePath}#toolbar=0&navpanes=0&scrollbar=1&view=FitH"
+                                type="application/pdf"
+                                style="width: 100%; height: 100%; border: none;"
+                            >
+                            </embed>
+                        </div>
+                        <div style="padding: 1rem; background: #f8f9fa; border-top: 1px solid #dee2e6; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                            <button class="btn btn-success" onclick="TrainingDocumentsModule.downloadDocument('${escapedId}')">
+                                <i class="bi bi-download me-2"></i>Télécharger le PDF
+                            </button>
+                            <a href="${filePath}" target="_blank" class="btn btn-outline-primary">
+                                <i class="bi bi-box-arrow-up-right me-2"></i>Ouvrir dans un nouvel onglet
+                            </a>
+                        </div>
+                    </div>
                 `;
             } else if (['ppt', 'pptx'].includes(ext)) {
                 bodyElement.innerHTML = `
@@ -461,7 +491,19 @@ const TrainingDocumentsModule = {
                         <h4 class="mt-4">Visualisation PowerPoint</h4>
                         <p class="text-muted text-center">Les fichiers PowerPoint ne peuvent pas être visualisés directement dans le navigateur.</p>
                         <p class="text-center"><strong>Téléchargez le fichier pour l'ouvrir avec PowerPoint</strong></p>
-                        <button class="btn btn-success mt-3" onclick="TrainingDocumentsModule.downloadDocument(${doc.id})">
+                        <button class="btn btn-success mt-3" onclick="TrainingDocumentsModule.downloadDocument('${escapedId}')">
+                            <i class="bi bi-download me-2"></i>Télécharger
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Pour les autres types de fichiers
+                bodyElement.innerHTML = `
+                    <div class="d-flex flex-column justify-content-center align-items-center h-100 p-5">
+                        <i class="bi bi-file-earmark text-secondary" style="font-size: 5rem;"></i>
+                        <h4 class="mt-4">Aperçu non disponible</h4>
+                        <p class="text-muted text-center">Ce type de fichier ne peut pas être visualisé dans le navigateur.</p>
+                        <button class="btn btn-success mt-3" onclick="TrainingDocumentsModule.downloadDocument('${escapedId}')">
                             <i class="bi bi-download me-2"></i>Télécharger
                         </button>
                     </div>
@@ -484,8 +526,14 @@ const TrainingDocumentsModule = {
         }
 
         try {
+            // Construire l'URL de base depuis la configuration
+            const baseURL = this.API_URL.replace('/api/documents/training', '');
+            const fileURL = `${baseURL}${doc.filepath}`;
+
+            console.log('⬇️ Downloading:', fileURL);
+
             const link = document.createElement('a');
-            link.href = `http://10.192.14.223:1880${doc.filepath}`;
+            link.href = fileURL;
             link.download = doc.filename;
             link.target = '_blank';
             document.body.appendChild(link);

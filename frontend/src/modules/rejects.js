@@ -524,19 +524,119 @@ const RejectAnalysis = {
             costByMachine[r.machine] += lineCost;
         });
 
-        let mostExpensive = "-";
-        if (Object.keys(costByMachine).length > 0) {
-            mostExpensive = Object.entries(costByMachine)
-                .sort((a, b) => b[1] - a[1])[0][0];
-        }
+        // Calculer le taux de non-conformité
+        // Formule : (Quantité rebuts) / (Quantité produite + Quantité rebuts) * 100
+        const nonConformityRate = this.calculateNonConformityRate(rejects);
 
         // Coût moyen par pièce rebutée
         const avgCostPerUnit = totalQty > 0 ? totalCost / totalQty : 0;
 
         document.getElementById("total-reject-cost").textContent = totalCost.toFixed(2) + "€";
         document.getElementById("total-reject-quantity").textContent = totalQty;
-        document.getElementById("most-expensive-machine").textContent = mostExpensive;
+        document.getElementById("non-conformity-rate").textContent = nonConformityRate.toFixed(2) + "%";
         document.getElementById("average-reject-cost").textContent = avgCostPerUnit.toFixed(4) + "€";
+    },
+
+    // Calculer le taux de non-conformité
+    calculateNonConformityRate: function(rejects) {
+        // Récupérer toutes les données pour la même période
+        let allData = [];
+        if (DataConnectorModule?.isConnected) {
+            allData = DataConnectorModule.getData();
+        } else {
+            return 0;
+        }
+
+        // Filtrer les données selon les mêmes critères que les rebuts
+        const filteredData = this.filterProductionData(allData);
+
+        // Calculer la quantité totale produite ET la quantité totale de rebuts
+        let totalProduced = 0;
+        let totalRejectsFromData = 0;
+
+        filteredData.forEach(item => {
+            // Ajouter la production (productionQuantity ou confirmedQuantity)
+            const prodQty = item.productionQuantity || item.confirmedQuantity || 0;
+            if (prodQty > 0) {
+                totalProduced += prodQty;
+            }
+
+            // Ajouter les rebuts
+            const scrapQty = item.scrapQuantity || 0;
+            if (scrapQty > 0) {
+                totalRejectsFromData += scrapQty;
+            }
+        });
+
+        // Debug - afficher les valeurs
+        console.log('=== CALCUL TAUX DE NON-CONFORMITÉ ===');
+        console.log('Nombre total de lignes filtrées:', filteredData.length);
+        console.log('Quantité produite totale:', totalProduced);
+        console.log('Quantité rebuts totale:', totalRejectsFromData);
+
+        // Calculer le taux de non-conformité
+        // Formule : Rebuts / (Production + Rebuts) * 100
+        const totalItems = totalProduced + totalRejectsFromData;
+        if (totalItems === 0) {
+            console.log('Taux de non-conformité: 0% (aucune donnée)');
+            return 0;
+        }
+
+        const rate = (totalRejectsFromData / totalItems) * 100;
+        console.log('Total items (prod + rebuts):', totalItems);
+        console.log('Taux de non-conformité:', rate.toFixed(2) + '%');
+        console.log('=====================================');
+
+        return rate;
+    },
+
+    // Filtrer les données de production selon les mêmes critères que les rebuts
+    filterProductionData: function(data) {
+        return data.filter(item => {
+            if (!item.date || !item.machine) return false;
+
+            // Filtrer uniquement les machines 850MS
+            if (!item.machine.startsWith("850MS")) {
+                return false;
+            }
+
+            // Filtrage par îlot
+            if (this.currentFilters.ilot !== "all") {
+                const ilotMachineNumbers = this.ilots[this.currentFilters.ilot] || [];
+                const machineNum = String(item.machine.replace("850MS", ""));
+                if (!ilotMachineNumbers.includes(machineNum)) {
+                    return false;
+                }
+            }
+
+            // Filtrage par machine
+            if (this.currentFilters.machine !== "all" &&
+                item.machine !== this.currentFilters.machine) {
+                return false;
+            }
+
+            // Filtrage par référence
+            if (this.currentFilters.material !== "all" &&
+                item.material !== this.currentFilters.material) {
+                return false;
+            }
+
+            // Filtrage par date
+            const d = this.parseDate(item.date);
+            const dStart = this.parseFrenchDate(this.currentFilters.startDate);
+            const dEnd = this.parseFrenchDate(this.currentFilters.endDate);
+
+            if (!d) return false;
+            if (!dStart || !dEnd) return true;
+
+            d.setHours(0, 0, 0, 0);
+            dStart.setHours(0, 0, 0, 0);
+            dEnd.setHours(23, 59, 59, 999);
+
+            if (d < dStart || d > dEnd) return false;
+
+            return true;
+        });
     },
 
     // MACHINE COST TABLE
